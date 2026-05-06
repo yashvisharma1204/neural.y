@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yashvi Sharma | AI & Data Systems</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        
+        body {
+            background-color: #000000;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 8% 15%;
+            line-height: 1.7;
+        }
+
+        header {
+            margin-bottom: 4rem;
+            border-bottom: 1px solid #333333;
+            padding-bottom: 2.5rem;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .profile-pic {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            filter: grayscale(100%);
+            border: 1px solid #333333;
+        }
+
+        .profile-info h1 {
+            font-weight: 600;
+            font-size: 2.2rem;
+            color: #ffffff;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .profile-info p {
+            font-weight: 300;
+            color: #a0a0a0;
+            margin: 0 0 1.2rem 0;
+            max-width: 600px;
+        }
+
+        .links a {
+            color: #ffffff;
+            text-decoration: none;
+            margin-right: 1.5rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #555555;
+        }
+
+        .links a:hover {
+            border-bottom-color: #ffffff;
+        }
+
+        .blog-list h2 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .blog-item {
+            margin-bottom: 2rem;
+        }
+
+        .blog-item a.post-title {
+            display: block;
+            font-size: 1.2rem;
+            color: #e0e0e0;
+            text-decoration: none;
+            font-weight: 400;
+            margin-bottom: 0.4rem;
+        }
+
+        .blog-item a.post-title:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        .blog-item p.post-summary {
+            color: #888888;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="profile-container">
+            <!-- Replace with your actual photo URL -->
+            <img src="yashvi-photo.jpg" alt="Yashvi Sharma" class="profile-pic">
+            <div class="profile-info">
+                <h1>Yashvi Sharma</h1>
+                <p>Software Engineer in Training specializing in AI and Data Systems. Fueling my research into the mathematical theory and optimization of neural networks, usually with a good cup of coffee nearby.</p>
+                <div class="links">
+                    <a href="https://github.com/yourusername">GitHub</a>
+                    <a href="https://linkedin.com/in/yourusername">LinkedIn</a>
+                    <a href="mailto:your.email@example.com">Email</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="blog-list">
+            <h2>Writing & Research</h2>
+            
+            <div class="blog-item">
+                <a href="blogs/distillbert.html" class="post-title">Shrinking DistilBERT: A Deep Dive into Pruning, KD, and Quantization</a>
+                <p class="post-summary">Exploring how to make a language model leaner and faster through a complete compression workflow.</p>
+            </div>
+            
+            <!-- Future posts go here -->
+            
+        </section>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shrinking DistilBERT | Yashvi Sharma</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
+        
+        body {
+            background-color: #000000;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 5% 10%;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        nav {
+            margin-bottom: 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a {
+            color: #888888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border-bottom: 1px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        nav a:hover {
+            color: #ffffff;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        .github-btn {
+            background-color: #ffffff;
+            color: #000000;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: none;
+            transition: opacity 0.2s;
+        }
+
+        .github-btn:hover {
+            opacity: 0.8;
+        }
+
+        header {
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta {
+            color: #888888;
+            font-size: 0.9rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid #333333;
+            border-bottom: 1px solid #333333;
+            margin-bottom: 3rem;
+        }
+
+        .stat-item h4 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin: 0 0 0.2rem 0;
+            font-weight: 600;
+        }
+
+        .stat-item p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin-top: 3.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #222222;
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            color: #e0e0e0;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            color: #cccccc;
+        }
+
+        ul {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            color: #cccccc;
+            font-weight: 300;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        strong {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Code Block Styling */
+        pre {
+            background-color: #111111;
+            border: 1px solid #222222;
+            border-radius: 6px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 2rem 0;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #d4d4d4;
+        }
+
+        p code, li code {
+            background-color: #1a1a1a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2.5rem;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid #222222;
+        }
+
+        th {
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover td {
+            background-color: #0a0a0a;
+        }
+
+        .highlight-row td {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            margin-top: 5rem;
+            padding-top: 2rem;
+            border-top: 1px solid #222222;
+            font-size: 0.85rem;
+            color: #666666;
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <nav>
+            <a href="index.html">← Back to Home</a>
+            <a href="/work/Compressing_DistilBERT.ipynb" target="_blank" class="github-btn">View .ipynb on GitHub</a>
+        </nav>
+
+        <header>
+            <h1>Compressing DistilBERT: Pruning, Distillation & Quantization</h1>
+            <div class="meta">AG News · 4-Class Classification · 120,000 training samples · GPU: CUDA</div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h4>88.3%</h4>
+                <p>Baseline Acc</p>
+            </div>
+            <div class="stat-item">
+                <h4>2.1×</h4>
+                <p>Compression</p>
+            </div>
+            <div class="stat-item">
+                <h4>31.1%</h4>
+                <p>Sparsity</p>
+            </div>
+            <div class="stat-item">
+                <h4>48.4%</h4>
+                <p>Less Latency</p>
+            </div>
+        </div>
+
+        <article>
+            <h2>Why Are We Doing This?</h2>
+            <p>Transformers like BERT are incredibly powerful, but their massive size makes them slow, memory-heavy, and expensive to deploy in real-world production environments. The goal of <strong>model compression</strong> is to shrink a model's physical file size and drastically speed up inference latency (how fast it makes predictions) without lobotomizing its accuracy.</p>
+            
+            <p>To test this, I built a complete three-stage compression architecture applied to DistilBERT for news topic classification using the AG News dataset. By starting with a model that has already been distilled (DistilBERT), we can push the absolute boundaries of how small and fast a network can get before its structural integrity fails.</p>
+
+            <h2>Step 1: Baseline Training</h2>
+            <p>We begin by fine-tuning <code>distilbert-base-uncased</code> on the AG News classification task for 3 epochs. This fully trained model serves as our baseline reference point, and crucially, it will act as the "Teacher" in the distillation phase later on.</p>
+
+<pre><code># Fine-tuning the full DistilBERT model
+model_baseline = DistilBertForSequenceClassification.from_pretrained(
+    "distilbert-base-uncased", num_labels=4
+).to(device)
+
+training_args = TrainingArguments(
+    output_dir="./results_baseline",
+    num_train_epochs=3,
+    per_device_train_batch_size=32,
+    fp16=True,
+    load_best_model_at_end=True,
+)
+
+trainer = Trainer(
+    model=model_baseline,
+    args=training_args,
+    train_dataset=train_data,
+    eval_dataset=test_data,
+    compute_metrics=compute_metrics,
+)
+trainer.train()</code></pre>
+
+            <h2>Step 2: What is Pruning?</h2>
+            <p><strong>What is it?</strong> Pruning is the physical removal of the least important parts of a neural network to reduce computation. Think of it like trimming the dead branches off a tree.</p>
+            <p>In this architecture, we use two types of pruning:</p>
+            <ul>
+                <li><strong>Attention Head Pruning:</strong> Not all attention heads contribute equally. We calculate an importance score for each head and completely remove the bottom 60%.</li>
+                <li><strong>Magnitude Pruning:</strong> We zero out the smallest, least impactful weights in the Feed-Forward Network (FFN). This creates a combined <strong>31.1% overall sparsity</strong> across 58.6M parameters.</li>
+            </ul>
+
+<pre><code># 1. Attention Head Pruning
+head_importance = compute_head_importance(model_pruned, small_loader, n_batches=20)
+model_pruned, heads_pruned = prune_heads_by_importance(model_pruned, head_importance, prune_ratio=0.6)
+
+# 2. Magnitude Pruning on FFN and Output Layers
+import torch.nn.utils.prune as prune
+
+for name, module in model_pruned.named_modules():
+    if isinstance(module, torch.nn.Linear):
+        if any(x in name for x in ["ffn.lin1", "ffn.lin2", "attention.out_lin", "classifier"]):
+            prune.l1_unstructured(module, name="weight", amount=0.6)
+            prune.remove(module, "weight")</code></pre>
+
+            <h2>Step 3: What is Knowledge Distillation (KD) and Why Use It?</h2>
+            <p><strong>What is it?</strong> Knowledge Distillation is a technique where a smaller, compressed model (the "Student") is trained to mimic the behavior of a larger, highly accurate model (the "Teacher").</p>
+            <p><strong>Why use it?</strong> When you aggressively prune a model by ripping out attention heads and zeroing weights, it suffers a drop in accuracy. KD helps the student recover this lost performance. Instead of learning purely from binary labels (like <code>1</code> for Sports, <code>0</code> for everything else), the student learns from the Teacher's "soft probabilities" (e.g., 85% sure it's Sports, 15% sure it's Business). This richer, nuanced signal helps the sparse model regain its predictive power.</p>
+
+<pre><code>import torch.nn.functional as F
+
+def distillation_loss(student_logits, teacher_logits, labels, temperature=4.0, alpha=0.7):
+    # KL Divergence loss aligns student with teacher's soft outputs
+    kd_loss = F.kl_div(
+        F.log_softmax(student_logits / temperature, dim=1),
+        F.softmax(teacher_logits / temperature, dim=1),
+        reduction="batchmean"
+    ) * (temperature ** 2)
+    
+    # Standard Cross-Entropy loss
+    ce_loss = F.cross_entropy(student_logits, labels)
+    
+    return alpha * kd_loss + (1 - alpha) * ce_loss</code></pre>
+
+            <h2>Step 4: What is Quantization and Why Do We Need It?</h2>
+            <p><strong>What is it?</strong> Quantization is the process of converting the high-precision numbers used in a neural network (typically 32-bit floating-point numbers, or FP32) into lower-precision formats (like 8-bit integers, or INT8).</p>
+            <p><strong>Why use it?</strong> An INT8 number takes up 4x less memory than an FP32 number. By dynamically quantizing our pruned model, we instantly slash its physical file size and make it run significantly faster on standard CPUs, as it requires less memory bandwidth and computational power to process.</p>
+
+<pre><code># Applying dynamic quantization to target CPU execution
+from copy import deepcopy
+
+model_quantized = deepcopy(model_pruned).cpu()
+model_quantized = torch.ao.quantization.quantize_dynamic(
+    model_quantized, 
+    {torch.nn.Linear}, 
+    dtype=torch.qint8
+)</code></pre>
+
+            <h2>Final Results & CPU Benchmarks</h2>
+            <p>To guarantee a scientifically fair comparison, all latency benchmarks for the three model variants were evaluated strictly on the CPU. The progressive architecture yields massive size and latency savings with a highly manageable trade-off in accuracy.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model Variant</th>
+                        <th>Accuracy</th>
+                        <th>File Size (MB)</th>
+                        <th>Eff Size (MB)</th>
+                        <th>Sparsity</th>
+                        <th>Latency (ms)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Baseline (DistilBERT)</td>
+                        <td>88.30%</td>
+                        <td>255.46</td>
+                        <td>255.46</td>
+                        <td>0.0%</td>
+                        <td>200.34</td>
+                    </tr>
+                    <tr>
+                        <td>+ Pruned + KD</td>
+                        <td>87.20%</td>
+                        <td>223.93</td>
+                        <td>154.38</td>
+                        <td>31.1%</td>
+                        <td>107.16</td>
+                    </tr>
+                    <tr class="highlight-row">
+                        <td>+ Pruned + KD + Quantized</td>
+                        <td>84.80%</td>
+                        <td>124.38</td>
+                        <td>N/A</td>
+                        <td>N/A</td>
+                        <td>74.03</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Conclusion & Limitations</h2>
+            <p>Combining structured attention pruning, knowledge distillation, and dynamic quantization produces compounding benefits. The fully compressed model achieved a <strong>2.1× compression ratio</strong> and <strong>63% faster</strong> CPU inference, while retaining roughly 96% of the baseline accuracy.</p>
+            
+            <p>It is worth noting that working in environments like Google Colab presents specific limitations. Calculating head importance and executing magnitude pruning requires heavy tensor operations, meaning memory management is crucial to avoid Out-Of-Memory (OOM) GPU crashes. Additionally, because dynamically quantized models natively target CPU execution, GPU testing is constrained at that stage.</p>
+
+        </article>
+
+        <div class="footer-note">
+            <p>© 2026 Yashvi Sharma. Built for speed, designed for clarity.</p>
+        </div>
+    </div>
+
+</body>
+</html>
