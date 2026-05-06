@@ -3,29 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yashvi Sharma | AI & Data Systems</title>
+    <title>Yashvi Sharma | Notebook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #ffffff;
+            --text: #0a0a0a;
+            --border: #0a0a0a;
+            --yellow: #ffe600;
+            --pink: #ff99cc;
+            --blue: #99ccff;
+            --green: #b3ffb3;
+        }
+
         body {
-            background-color: #000000;
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 8% 15%;
-            line-height: 1.7;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.6;
+            padding: 5% 10%;
         }
 
-        header {
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        /* --- PROFILE SECTION --- */
+        .profile-card {
+            background: var(--bg);
+            border: 3px solid var(--border);
+            box-shadow: 6px 6px 0px var(--border);
+            border-radius: 8px;
+            padding: 2.5rem;
             margin-bottom: 4rem;
-            border-bottom: 1px solid #333333;
-            padding-bottom: 2.5rem;
-        }
-
-        .profile-container {
             display: flex;
             align-items: center;
-            gap: 2.5rem;
+            gap: 2rem;
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #fffdf9; /* very slight cream to pop off the white bg */
         }
 
         .profile-pic {
@@ -33,99 +52,183 @@
             height: 120px;
             border-radius: 50%;
             object-fit: cover;
-            filter: grayscale(100%);
-            border: 1px solid #333333;
+            border: 3px solid var(--border);
+            background: var(--bg);
         }
 
         .profile-info h1 {
-            font-weight: 600;
-            font-size: 2.2rem;
-            color: #ffffff;
-            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            letter-spacing: -1px;
+        }
+
+        .role {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            background: var(--yellow);
+            padding: 4px 10px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-weight: 700;
         }
 
         .profile-info p {
-            font-weight: 300;
-            color: #a0a0a0;
-            margin: 0 0 1.2rem 0;
-            max-width: 600px;
-        }
-
-        .links a {
-            color: #ffffff;
-            text-decoration: none;
-            margin-right: 1.5rem;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #555555;
-        }
-
-        .links a:hover {
-            border-bottom-color: #ffffff;
-        }
-
-        .blog-list h2 {
-            font-size: 1.5rem;
-            color: #ffffff;
-            font-weight: 600;
+            font-size: 1.1rem;
             margin-bottom: 1.5rem;
+            background: var(--bg); /* readable over the dotted pattern */
+            padding: 5px;
+            border-radius: 4px;
         }
 
-        .blog-item {
-            margin-bottom: 2rem;
+        .social-links {
+            display: flex;
+            gap: 1rem;
         }
 
-        .blog-item a.post-title {
-            display: block;
-            font-size: 1.2rem;
-            color: #e0e0e0;
+        .btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 700;
             text-decoration: none;
-            font-weight: 400;
-            margin-bottom: 0.4rem;
+            color: var(--text);
+            background: var(--bg);
+            border: 2px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 4px;
+            box-shadow: 3px 3px 0px var(--border);
+            transition: all 0.1s ease;
         }
 
-        .blog-item a.post-title:hover {
-            color: #ffffff;
-            text-decoration: underline;
+        .btn.github:hover { background: var(--pink); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
+        .btn.linkedin:hover { background: var(--blue); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
+        .btn.email:hover { background: var(--green); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
+
+        .btn:active {
+            transform: translate(2px, 2px) !important;
+            box-shadow: 1px 1px 0px var(--border) !important;
         }
 
-        .blog-item p.post-summary {
-            color: #888888;
-            font-size: 0.95rem;
-            margin: 0;
+        /* --- BLOG SECTION --- */
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            border-bottom: 3px solid var(--border);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .blog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .blog-post {
+            text-decoration: none;
+            color: var(--text);
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: block;
+            box-shadow: 4px 4px 0px var(--border);
+            transition: all 0.1s ease;
+            background: var(--bg);
+        }
+
+        .blog-post:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 7px 7px 0px var(--border);
+            background: #f9f9f9;
+        }
+
+        .blog-post:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--border);
+        }
+
+        .blog-meta {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .tag {
+            background: var(--blue);
+            color: var(--text);
+            padding: 2px 8px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .blog-post h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .blog-post p {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            .profile-card { flex-direction: column; text-align: center; }
+            .social-links { justify-content: center; flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="profile-container">
+    <div class="container">
+        
+        <div class="profile-card">
             <!-- Replace with your actual photo URL -->
-            <img src="yashvi-photo.jpg" alt="Yashvi Sharma" class="profile-pic">
+            <img src="cat.jpg" alt="Yashvi Sharma" class="profile-pic">
             <div class="profile-info">
                 <h1>Yashvi Sharma</h1>
-                <p>Software Engineer in Training specializing in AI and Data Systems. Fueling my research into the mathematical theory and optimization of neural networks, usually with a good cup of coffee nearby.</p>
-                <div class="links">
-                    <a href="https://github.com/yourusername">GitHub</a>
-                    <a href="https://linkedin.com/in/yourusername">LinkedIn</a>
-                    <a href="mailto:your.email@example.com">Email</a>
+                <div class="role">Software Engineer • AI & Data</div>
+                <p>Fueling my research into the mathematical theory and optimization of neural networks, usually with a good cup of coffee nearby.</p>
+                <div class="social-links">
+                    <a href="https://github.com/yourusername" class="btn github">GitHub</a>
+                    <a href="https://linkedin.com/in/yourusername" class="btn linkedin">LinkedIn</a>
+                    <a href="mailto:your.email@example.com" class="btn email">Email</a>
                 </div>
             </div>
         </div>
-    </header>
 
-    <main>
-        <section class="blog-list">
-            <h2>Writing & Research</h2>
+        <main>
+            <h2 class="section-title">Research Log</h2>
             
-            <div class="blog-item">
-                <a href="blogs/distillbert.html" class="post-title">Shrinking DistilBERT: A Deep Dive into Pruning, KD, and Quantization</a>
-                <p class="post-summary">Exploring how to make a language model leaner and faster through a complete compression workflow.</p>
+            <div class="blog-list">
+                <a href="/blogs/distillbert.html" class="blog-post">
+                    <div class="blog-meta">
+                        <span class="tag">AI / NLP</span>
+                        <span>Latest Update</span>
+                    </div>
+                    <h3>Shrinking DistilBERT: Pruning, KD & Quantization</h3>
+                    <p>A deep dive into a complete three-stage compression architecture—reducing model size by 2.1× while preserving accuracy.</p>
+                </a>
+
+                <!-- Example of a future post -->
+                <a href="#" class="blog-post" style="border-style: dashed; box-shadow: none;">
+                    <div class="blog-meta">
+                        <span class="tag" style="background: var(--green);">Draft</span>
+                    </div>
+                    <h3 style="color: #666;">Attention is All You Need</h3>
+                    <p style="color: #888;">Exploring the foundational paper that introduced the Transformer architecture and its impact on NLP.</p>
+                </a>
             </div>
-            
-            <!-- Future posts go here -->
-            
-        </section>
-    </main>
+        </main>
+    </div>
 
 </body>
 </html>
