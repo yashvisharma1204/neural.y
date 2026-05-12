@@ -1,5 +1,7 @@
-<h1 align="center">neural.y</h1>
-_neural networks with yashvi_
+<div  align="center" >
+<h1 style="border-bottom: 0;">.✦ ݁˖neural.y⊹ ࣪ ˖</h1>
+           <i>neural networks with yashvi</i>
+</div>
 <img width="1000" alt="image" src="https://github.com/user-attachments/assets/bfd9da00-cbf5-4beb-9223-a990a82013bf" />
 
 This repository contains my independent research experiments in neural networks and model optimization, with a focus on efficient transformer models and compression techniques.
