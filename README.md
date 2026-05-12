@@ -1,4 +1,4 @@
-# neural.y
+<h1 align="center">neural.y</h1>
 _neural networks with yashvi_
 <img width="1000" alt="image" src="https://github.com/user-attachments/assets/bfd9da00-cbf5-4beb-9223-a990a82013bf" />
 
