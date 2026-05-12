@@ -1,4 +1,6 @@
 # neural.y
+<img width="1199" height="672" alt="image" src="https://github.com/user-attachments/assets/bfd9da00-cbf5-4beb-9223-a990a82013bf" />
+
 This repository contains my independent research experiments in neural networks and model optimization, with a focus on efficient transformer models and compression techniques.
 
 ### Notebooks
