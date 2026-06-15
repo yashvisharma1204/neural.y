@@ -129,6 +129,13 @@
             gap: 1.5rem;
         }
 
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+
         .blog-post {
             text-decoration: none;
             color: var(--text);
@@ -209,13 +216,20 @@
             <h2 class="section-title">Research Log</h2>
             
             <div class="blog-list">
-                <a href="blogs/distillbert.html" class="blog-post">
+                <!-- <a href="blogs/distillbert.html" class="blog-post">
                     <div class="blog-meta">
                         <span class="tag">AI / NLP</span>
                         <span>Latest Update</span>
                     </div>
                     <h3>Shrinking DistilBERT: Pruning, KD & Quantization</h3>
                     <p>A deep dive into a complete three-stage compression architecture—reducing model size by 2.1× while preserving accuracy.</p>
+                </a> -->
+                <a href="blogs/study1.html" class="blog-post">
+                    <div class="blog-meta">
+                        <span class="tag" style="background: var(--pink);">Study Notes</span>
+                    </div>
+                    <h3>Transformer Architecture: Encoder</h3>
+                    <p>A detailed breakdown of the encoder component of the Transformer model, including multi-head attention and feed-forward networks.</p>
                 </a>
                 <!-- Example of a future post -->
                 <a href="#" class="blog-post" style="border-style: dashed; box-shadow: none;">

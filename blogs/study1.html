@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer Encoder — Research Notes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f7f5ef;
+            --paper: #fdfcf8;
+            --text: #1a1a1a;
+            --border: #1a1a1a;
+            --muted: #5a5a5a;
+            --grid: #d4cfbe;
+            --red-line: #e8a0a0;
+            --yellow: #fef08a;
+            --pink: #fecdd3;
+            --blue: #bae6fd;
+            --green: #bbf7d0;
+            --ink: #2d2d2d;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image:
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: var(--text);
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 1.15rem;
+            line-height: 1.85;
+            padding: 4% 6%;
+        }
+
+        .container { max-width: 860px; margin: 0 auto; }
+
+        /* NAV */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2.5rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--grid);
+            padding-bottom: 0.8rem;
+        }
+        nav a { color: var(--muted); text-decoration: none; }
+        nav a:hover { color: var(--text); text-decoration: underline; }
+
+        /* ── COVER PAGE ── */
+        .cover {
+            background: var(--paper);
+            border: 2px solid var(--border);
+            border-left: 6px solid var(--border);
+            padding: 3rem 3.5rem 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 5px 5px 0 var(--border);
+            position: relative;
+        }
+        .cover::before {
+            content: '';
+            position: absolute;
+            left: 52px; top: 0; bottom: 0;
+            border-left: 2px solid var(--red-line);
+        }
+        .cover-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 1rem;
+            display: block;
+        }
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 3.2rem;
+            font-weight: 600;
+            line-height: 1.05;
+            margin-bottom: 0.5rem;
+        }
+        .cover-sub {
+            font-style: italic;
+            color: var(--muted);
+            font-size: 1.1rem;
+            margin-bottom: 1.8rem;
+        }
+        .cover-meta {
+            display: flex; gap: 2rem; flex-wrap: wrap;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+            border-top: 1px dashed var(--grid);
+            padding-top: 1rem;
+        }
+        .cover-meta span strong { color: var(--text); display: block; font-size: 0.78rem; }
+
+        /* ── STAT ROW ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            margin-bottom: 3rem;
+            border: 2px solid var(--border);
+            box-shadow: 4px 4px 0 var(--border);
+        }
+        .stat-cell {
+            padding: 1.2rem 1rem;
+            text-align: center;
+            border-right: 2px solid var(--border);
+        }
+        .stat-cell:last-child { border-right: none; }
+        .stat-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+        }
+        .stat-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            display: block;
+            margin-top: 0.3rem;
+        }
+        .stat-cell:nth-child(1) { background: var(--blue); }
+        .stat-cell:nth-child(2) { background: var(--pink); }
+        .stat-cell:nth-child(3) { background: var(--yellow); }
+        .stat-cell:nth-child(4) { background: var(--green); }
+
+        /* ── SECTION ── */
+        .section {
+            background: var(--paper);
+            border: 1.5px solid var(--border);
+            margin-bottom: 2.5rem;
+            box-shadow: 4px 4px 0 var(--border);
+            position: relative;
+        }
+        .section::before {
+            content: '';
+            position: absolute;
+            left: 48px; top: 0; bottom: 0;
+            border-left: 1.5px solid var(--red-line);
+            pointer-events: none;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: stretch;
+            border-bottom: 1.5px solid var(--border);
+        }
+        .step-num {
+            background: var(--border);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 14px 16px;
+            writing-mode: horizontal-tb;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .section-title {
+            padding: 12px 24px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            background: var(--paper);
+            text-transform: uppercase;
+        }
+
+        .section-body {
+            padding: 2rem 2.5rem 2rem 3.5rem;
+        }
+
+        /* ── TYPOGRAPHY ── */
+        p { margin-bottom: 1.3rem; }
+        p:last-child { margin-bottom: 0; }
+
+        h3 {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--muted);
+            margin: 2rem 0 0.8rem;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--grid);
+        }
+        h3:first-child { margin-top: 0; }
+
+        em { font-style: italic; }
+        strong { font-weight: 600; }
+
+        code {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.82em;
+            background: rgba(0,0,0,0.06);
+            padding: 1px 5px;
+            border: 1px solid rgba(0,0,0,0.12);
+        }
+
+        /* ── MATH BLOCK ── */
+        .math {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 2.2;
+            background: rgba(0,0,0,0.03);
+            border-left: 4px solid var(--border);
+            padding: 1.4rem 2rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+        .math .comment {
+            color: var(--muted);
+            font-size: 0.8rem;
+            padding-left: 1.5rem;
+        }
+        .math .eq-label {
+            float: right;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        /* ── ANNOTATION BOX (margin note inline) ── */
+        .annotation {
+            float: right;
+            width: 190px;
+            margin: 0.3rem 0 1.2rem 2rem;
+            background: var(--yellow);
+            border: 1.5px solid var(--border);
+            padding: 0.9rem 1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            line-height: 1.6;
+            box-shadow: 3px 3px 0 var(--border);
+        }
+        .annotation.pink { background: var(--pink); }
+        .annotation.blue { background: var(--blue); }
+        .annotation.green { background: var(--green); }
+        .annotation .ann-title {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.4rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ── DEFINITION / THEOREM BLOCK ── */
+        .def-block {
+            border: 1.5px solid var(--border);
+            padding: 1.3rem 1.6rem;
+            margin: 1.5rem 0;
+            background: var(--paper);
+            position: relative;
+        }
+        .def-block::before {
+            content: attr(data-label);
+            position: absolute;
+            top: -10px; left: 14px;
+            background: var(--border);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 2px 8px;
+            text-transform: uppercase;
+        }
+        .def-block.yellow { background: var(--yellow); }
+        .def-block.blue   { background: #e8f4fd; }
+        .def-block.pink   { background: #fdf0f2; }
+        .def-block.green  { background: #f0fdf4; }
+
+        /* ── FLOW DIAGRAM (horizontal pipeline) ── */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .pipe-node {
+            border: 1.5px solid var(--border);
+            padding: 0.7rem 1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            text-align: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+            line-height: 1.5;
+        }
+        .pipe-node strong { display: block; font-size: 0.72rem; text-transform: uppercase; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+        .pipe-arrow {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            padding: 0 6px;
+            flex-shrink: 0;
+            color: var(--muted);
+        }
+
+        /* ── LAYER STACK ── */
+        .layer-stack {
+            margin: 1.5rem auto;
+            max-width: 460px;
+        }
+        .ls-row {
+            display: flex;
+            align-items: stretch;
+            border: 1.5px solid var(--border);
+            margin-bottom: -1.5px;
+        }
+        .ls-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.68rem;
+            font-weight: 700;
+            width: 68px;
+            min-width: 68px;
+            padding: 8px 6px;
+            text-align: center;
+            background: var(--border);
+            color: white;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ls-content {
+            padding: 9px 14px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.72rem;
+            flex: 1;
+            line-height: 1.5;
+        }
+        .ls-math {
+            padding: 9px 12px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-align: right;
+            min-width: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            border-left: 1px dashed var(--grid);
+        }
+        .ls-row.input  { background: var(--blue); }
+        .ls-row.output { background: var(--green); }
+        .ls-row.layer  { background: var(--paper); }
+        .ls-row.layer:nth-child(even) { background: #f5f3ed; }
+        .ls-arrow-row {
+            text-align: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            padding: 2px 0;
+        }
+
+        /* ── SUBLAYER CARDS ── */
+        .sublayer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 1.5rem 0;
+        }
+        .sl-card {
+            border: 1.5px solid var(--border);
+            overflow: hidden;
+        }
+        .sl-card-head {
+            background: var(--border);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 6px 12px;
+        }
+        .sl-card-body {
+            padding: 1rem 1.1rem;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        .sl-card:nth-child(1) .sl-card-body { background: #eef6ff; }
+        .sl-card:nth-child(2) .sl-card-body { background: #fff0f3; }
+
+        /* ── CODE BLOCK ── */
+        pre {
+            background: #1a1a1a;
+            color: #e8e8e8;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.7;
+            padding: 1.5rem 1.8rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            border: 2px solid var(--border);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+        pre .c { color: #888; }
+        pre .kw { color: #93c5fd; }
+        pre .fn { color: #86efac; }
+        pre .str { color: #fca5a5; }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 1rem;
+            border: 1.5px solid var(--border);
+            box-shadow: 3px 3px 0 var(--border);
+        }
+        th {
+            background: var(--border);
+            color: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 9px 12px;
+            text-align: left;
+            font-weight: 700;
+        }
+        td {
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--grid);
+            border-right: 1px solid var(--grid);
+        }
+        td:last-child { border-right: none; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+        tr.hl td { background: var(--green); font-weight: 600; }
+
+        /* ── GRAPH DIAGRAM ── */
+        .graph-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 1.5rem 0;
+            padding: 1.8rem;
+            border: 1.5px dashed var(--border);
+            background: rgba(0,0,0,0.02);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .g-node {
+            width: 72px; height: 72px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.78rem; font-weight: 700;
+            box-shadow: 2px 2px 0 var(--border);
+        }
+        .g-node .g-sub { font-size: 0.6rem; color: var(--muted); font-weight: 400; }
+        .g-conn { font-size: 0.9rem; color: var(--muted); padding: 0 4px; }
+
+        /* ── NEXT UP ── */
+        .next-up {
+            border: 2px solid var(--border);
+            padding: 2.2rem 2.5rem;
+            margin-top: 3rem;
+            box-shadow: 6px 6px 0 var(--border);
+            background: var(--border);
+            color: white;
+            display: flex; align-items: center;
+            justify-content: space-between;
+            gap: 2rem; flex-wrap: wrap;
+        }
+        .next-up-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #888;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .next-up h2 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        .next-up p { color: #aaa; font-size: 1rem; margin: 0; }
+        .next-btn {
+            background: var(--yellow);
+            color: var(--text);
+            border: 2px solid var(--yellow);
+            padding: 12px 24px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 3px 3px 0 rgba(255,255,255,0.3);
+            letter-spacing: 1px;
+        }
+        .next-btn:hover { background: white; }
+
+        /* CLEARFIX */
+        .cf::after { content: ''; display: table; clear: both; }
+
+        hr.rule {
+            border: none;
+            border-top: 1px dashed var(--grid);
+            margin: 0.8rem 0 1.5rem;
+        }
+
+        @media (max-width: 700px) {
+            .stat-row { grid-template-columns: repeat(2,1fr); }
+            .sublayer-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2.2rem; }
+            .section-body { padding: 1.5rem 1.5rem 1.5rem 1.8rem; }
+            .annotation { float: none; width: 100%; margin: 1rem 0; }
+            .next-up { flex-direction: column; }
+            .ls-math { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Vaswani et al. 2017 — "Attention Is All You Need" — §3.1</span>
+    </nav>
+
+    <!-- COVER -->
+    <div class="cover">
+        <span class="cover-label">Research Notes — Transformer Architecture</span>
+        <h1>The Transformer Encoder</h1>
+        <p class="cover-sub">A complete mathematical walkthrough — from raw token sequence to contextualised representation</p>
+        <div class="cover-meta">
+            <span><strong>Paper</strong>Attention Is All You Need</span>
+            <span><strong>Section</strong>§3.1 Encoder Stack</span>
+            <span><strong>Architecture</strong>N=6, d_model=512, h=8, d_ff=2048</span>
+            <span><strong>Core function</strong>f_enc : ℝⁿˣᵈ → ℝⁿˣᵈ</span>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stat-row">
+        <div class="stat-cell">
+            <span class="stat-num">6</span>
+            <span class="stat-label">Identical Layers N</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-num">512</span>
+            <span class="stat-label">Model Dimension d_model</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-num">8</span>
+            <span class="stat-label">Attention Heads h</span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-num">2048</span>
+            <span class="stat-label">FFN Inner Dim d_ff</span>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 1
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 01</div>
+            <div class="section-title">Input Representation — From Token Sequence to Continuous Matrix</div>
+        </div>
+        <div class="section-body cf">
+
+            <div class="annotation blue">
+                <span class="ann-title">Shape</span>
+                After this step:<br>
+                X ∈ ℝⁿˣ⁵¹²<br><br>
+                n = seq length<br>
+                512 = d_model<br><br>
+                One row vector per token. Each row is context-free — identical regardless of sentence.
+            </div>
+
+            <p>The encoder operates on continuous vector representations, never raw text. A discrete token sequence must first be projected into a metric space before any computation can occur. This happens in three stages:</p>
+
+            <div class="pipeline">
+                <div class="pipe-node">
+                    <strong>Raw Text</strong>
+                    "Hello world"
+                    <div class="shape">string</div>
+                </div>
+                <div class="pipe-arrow">──▶</div>
+                <div class="pipe-node" style="background:var(--blue);">
+                    <strong>Tokenise</strong>
+                    [5024, 995]
+                    <div class="shape">ℤⁿ</div>
+                </div>
+                <div class="pipe-arrow">──▶</div>
+                <div class="pipe-node" style="background:var(--pink);">
+                    <strong>Embed</strong>
+                    E ∈ ℝ|V|×512
+                    <div class="shape">ℝⁿˣ⁵¹²</div>
+                </div>
+                <div class="pipe-arrow">──▶</div>
+                <div class="pipe-node" style="background:var(--yellow);">
+                    <strong>+ Pos. Enc.</strong>
+                    X = E + PE
+                    <div class="shape">ℝⁿˣ⁵¹²</div>
+                </div>
+            </div>
+
+            <h3>Token Embedding</h3>
+            <p>A learned embedding matrix <strong>E ∈ ℝ<sup>|V|×d</sup></strong> maps each integer token ID to a dense vector. For token index <em>t</em>, the embedding is simply the <em>t</em>-th row of <strong>E</strong>. This is a lookup — not a computation. The result for a sequence of <em>n</em> tokens is a matrix <strong>X ∈ ℝ<sup>n×d</sup></strong> where each row <em>xᵢ</em> ∈ ℝᵈ carries the token's identity but nothing about its context.</p>
+
+            <div class="math">
+                x_i = E[token_i]     ∈ ℝ^d_model      <span class="comment">// row lookup</span><br>
+                X   = [x_1; x_2; ...; x_n]  ∈ ℝ^(n × d_model)
+            </div>
+
+            <h3>Positional Encoding</h3>
+            <p>Self-attention is permutation-equivariant by construction — if you shuffle the input rows, the output rows shuffle identically. The model has no inherent notion of sequence order. Positional encoding injects a unique signal for each position <em>i</em> using sinusoids of different frequencies:</p>
+
+            <div class="math">
+                PE(i, 2k)   = sin(i / 10000^(2k / d_model))<br>
+                PE(i, 2k+1) = cos(i / 10000^(2k / d_model))<br><br>
+                X_final = X + PE      ∈ ℝ^(n × d_model)   <span class="comment">// elementwise addition</span>
+            </div>
+
+            <p>The sinusoidal basis allows the model to attend by relative position via linear transformations, and generalises to sequence lengths unseen during training. The shape remains <code>ℝⁿˣ⁵¹²</code> — the positional encoding adds information without changing the dimensionality.</p>
+
+            <div class="def-block yellow" data-label="Critical Distinction">
+                <p>Every token embedding <em>xᵢ</em> is <strong>context-free</strong>: the vector for "bank" is identical in "river bank" and "bank account." The entire purpose of the 6-layer encoder stack is to transform these context-free vectors into context-aware vectors by allowing each token to aggregate information from all other tokens. This transformation is the encoder's sole function.</p>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 2
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 02</div>
+            <div class="section-title">The 6-Layer Stack — Iterated Refinement</div>
+        </div>
+        <div class="section-body cf">
+
+            <div class="annotation pink">
+                <span class="ann-title">Note</span>
+                Layers share structure but NOT weights. Each layer ℓ has its own independent parameter set θ_ℓ. Total encoder parameters ≈ 6 × (per-layer params).
+            </div>
+
+            <p>The encoder applies a sequence of <em>N = 6</em> identical-in-structure but independent-in-parameters transformations. Each layer maps <strong>ℝ<sup>n×d</sup> → ℝ<sup>n×d</sup></strong>, making the stack a well-defined composition:</p>
+
+            <div class="math">
+                Z^(0) = X                          <span class="comment">// input: context-free</span><br>
+                Z^(ℓ) = f_ℓ( Z^(ℓ-1) ),   ℓ = 1..6<br>
+                Z^(6) = f_6 ∘ f_5 ∘ ... ∘ f_1(X)  <span class="comment">// output: context-aware</span>
+            </div>
+
+            <div class="layer-stack">
+                <div class="ls-row input">
+                    <div class="ls-label">INPUT</div>
+                    <div class="ls-content">X — raw embeddings + pos. encoding</div>
+                    <div class="ls-math">Z⁽⁰⁾ ∈ ℝⁿˣ⁵¹²</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer">
+                    <div class="ls-label">L 1</div>
+                    <div class="ls-content">local syntax · nearby co-occurrence</div>
+                    <div class="ls-math">Z⁽¹⁾ = Z⁽⁰⁾ + δ⁽¹⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer">
+                    <div class="ls-label">L 2</div>
+                    <div class="ls-content">inter-token syntactic relations</div>
+                    <div class="ls-math">Z⁽²⁾ = Z⁽¹⁾ + δ⁽²⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer">
+                    <div class="ls-label">L 3</div>
+                    <div class="ls-content">phrase-level structural composition</div>
+                    <div class="ls-math">Z⁽³⁾ = Z⁽²⁾ + δ⁽³⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer">
+                    <div class="ls-label">L 4</div>
+                    <div class="ls-content">semantic role assignment</div>
+                    <div class="ls-math">Z⁽⁴⁾ = Z⁽³⁾ + δ⁽⁴⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer">
+                    <div class="ls-label">L 5</div>
+                    <div class="ls-content">long-range coreference · discourse</div>
+                    <div class="ls-math">Z⁽⁵⁾ = Z⁽⁴⁾ + δ⁽⁵⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row layer" style="background:#fdf0f2;">
+                    <div class="ls-label">L 6</div>
+                    <div class="ls-content">fully resolved contextual meaning</div>
+                    <div class="ls-math">Z⁽⁶⁾ = Z⁽⁵⁾ + δ⁽⁶⁾</div>
+                </div>
+                <div class="ls-arrow-row">↓</div>
+                <div class="ls-row output">
+                    <div class="ls-label">OUTPUT</div>
+                    <div class="ls-content">Z⁽⁶⁾ — context-aware representations</div>
+                    <div class="ls-math">Z⁽⁶⁾ ∈ ℝⁿˣ⁵¹²</div>
+                </div>
+            </div>
+
+            <h3>Iterated Refinement and Fixed Points</h3>
+            <p>Each residual connection casts the encoder as a form of iterative refinement. The representation at layer ℓ is the previous representation plus a learned correction δ⁽ˡ⁾:</p>
+
+            <div class="math">
+                Z^(ℓ) = Z^(ℓ-1) + δ^(ℓ)    where δ^(ℓ) = Sublayer(Z^(ℓ-1)) - Z^(ℓ-1) (pre-norm view)<br><br>
+                Total displacement of token i across all layers:<br>
+                z_i^(6) = x_i + Σ_{ℓ=1}^{6} δ_i^(ℓ)
+            </div>
+
+            <p>The fixed point condition — where further layers produce no correction, <em>δ = 0</em> — is never enforced explicitly, but the model naturally converges toward it empirically. Early layers produce large corrections (gross structural signal); later layers produce small, precise corrections (fine-grained semantic disambiguation).</p>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 3
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 03</div>
+            <div class="section-title">Inside One Encoder Layer — Two Sub-layers</div>
+        </div>
+        <div class="section-body cf">
+
+            <p>Each of the 6 layers applies exactly two sub-layers in sequence, each wrapped in a <strong>residual connection</strong> and <strong>Layer Normalization</strong>. Let <em>x</em> denote the input to a given sub-layer:</p>
+
+            <div class="math">
+                Output = LayerNorm( x + Sublayer(x) )       <span class="comment">// Add &amp; Norm</span>
+            </div>
+
+            <div class="sublayer-grid">
+                <div class="sl-card">
+                    <div class="sl-card-head">Sub-layer 1 — Multi-Head Self-Attention</div>
+                    <div class="sl-card-body">
+                        <p>Every token attends to every other token. Query, Key, and Value matrices are all derived from the same input — hence <em>self</em>-attention. Runs <em>h = 8</em> attention heads in parallel, each operating in a different <em>d_k = 64</em> dimensional subspace.</p>
+                        <div class="math" style="font-size:0.8rem; line-height:1.9;">
+                            H⁽¹⁾ = LayerNorm(X + MHA(X, X, X))
+                        </div>
+                    </div>
+                </div>
+                <div class="sl-card">
+                    <div class="sl-card-head">Sub-layer 2 — Position-wise FFN</div>
+                    <div class="sl-card-body">
+                        <p>A two-layer MLP applied <em>independently and identically</em> to each token position. No information mixes across positions here. Inner dimension d_ff = 2048 — a 4× expansion then contraction.</p>
+                        <div class="math" style="font-size:0.8rem; line-height:1.9;">
+                            Z⁽ˡ⁾ = LayerNorm(H⁽¹⁾ + FFN(H⁽¹⁾))
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Residual Connections — Gradient Analysis</h3>
+            <p>The residual connection is not cosmetic — it fundamentally changes the gradient flow. Without it, gradients must propagate through 6 × (MHA + FFN) transformations, each with potentially near-zero Jacobian. With the residual:</p>
+
+            <div class="math">
+                ∂L/∂x = ∂L/∂H · (I + ∂F/∂x)<br><br>
+                <span class="comment">// The identity term I guarantees a non-vanishing gradient path</span><br>
+                <span class="comment">// even when ∂F/∂x ≈ 0 (dead sub-layer)</span>
+            </div>
+
+            <h3>Layer Normalisation</h3>
+            <p>LayerNorm normalises across the <em>feature dimension</em> d for each token independently — not across the batch or sequence dimension. Given a vector z ∈ ℝᵈ:</p>
+
+            <div class="math">
+                μ = (1/d) Σ_j z_j<br>
+                σ² = (1/d) Σ_j (z_j - μ)²<br>
+                LN(z) = γ ⊙ (z - μ) / √(σ² + ε)  +  β<br><br>
+                <span class="comment">// γ, β ∈ ℝᵈ are learned affine parameters</span><br>
+                <span class="comment">// ε ≈ 1e-6 for numerical stability</span>
+            </div>
+
+            <p>This is in contrast to BatchNorm, which normalises across the batch dimension per feature — unstable for variable-length sequences and small batch sizes.</p>
+
+            <div class="def-block blue" data-label="Full Layer Forward Pass">
+                <div class="math" style="background:transparent; border:none; padding:0;">
+                    A = LayerNorm( Z^(ℓ-1) + MHA(Z^(ℓ-1), Z^(ℓ-1), Z^(ℓ-1)) )<br>
+                    Z^(ℓ) = LayerNorm( A + FFN(A) )<br><br>
+                    where FFN(x) = max(0, xW₁ + b₁)W₂ + b₂<br>
+                    W₁ ∈ ℝ^(512×2048),  W₂ ∈ ℝ^(2048×512)
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 4
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 04</div>
+            <div class="section-title">Attention as a Graph Operation — Computing the Corrections</div>
+        </div>
+        <div class="section-body cf">
+
+            <div class="annotation">
+                <span class="ann-title">Graph Theory</span>
+                Encoder = graph convolution on a fully connected directed graph.<br><br>
+                Nodes = tokens<br>
+                Edges = a_ij weights<br>
+                Edge weights = f(node features) — data-dependent, not fixed
+            </div>
+
+            <p>The mechanism that computes each correction δ is attention. Formally, define a fully connected directed graph <strong>G = (V, E)</strong> where <em>V</em> = {1,...,n} are token positions and each edge <em>(i→j)</em> carries a learned weight <em>a<sub>ij</sub></em>. The attention operation performs a weighted aggregation over this graph:</p>
+
+            <div class="math">
+                z_i = Σ_{j=1}^{n}  a_{ij} · v_j<br><br>
+                where  a_{ij} ≥ 0  and  Σ_j a_{ij} = 1    <span class="comment">// simplex constraint</span>
+            </div>
+
+            <div class="graph-diagram">
+                <div style="text-align:center;">
+                    <div class="g-node" style="background:var(--yellow);">
+                        The<span class="g-sub">pos 1</span>
+                    </div>
+                </div>
+                <div class="g-conn">⟺</div>
+                <div style="text-align:center;">
+                    <div class="g-node" style="background:var(--pink);">
+                        cat<span class="g-sub">pos 2</span>
+                    </div>
+                </div>
+                <div class="g-conn">⟺</div>
+                <div style="text-align:center;">
+                    <div class="g-node" style="background:var(--blue);">
+                        sat<span class="g-sub">pos 3</span>
+                    </div>
+                </div>
+                <div style="width:100%; text-align:center; font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--muted); border-top:1px dashed var(--grid); padding-top:0.9rem; margin-top:0.8rem;">
+                    Complete directed graph — all 9 edges active (including self-loops) · Edge weight a_ij is data-dependent
+                </div>
+            </div>
+
+            <h3>Numerical Example</h3>
+            <p>For "sat" attending to "The cat sat" with learned weights:</p>
+
+            <div class="math">
+                a_{sat,The} = 0.10,   a_{sat,cat} = 0.70,   a_{sat,sat} = 0.20<br>
+                (sum = 1.00 ✓)<br><br>
+                z_sat = 0.10·v_The + 0.70·v_cat + 0.20·v_sat<br><br>
+                <span class="comment">// "sat" is now 70% informed by "cat"</span><br>
+                <span class="comment">// who-is-doing-the-sitting is encoded in z_sat</span>
+            </div>
+
+            <h3>Where do a_ij Come From?</h3>
+            <p>The weights are computed via Scaled Dot-Product Attention (§3.2 — next section). The key point here: they are <em>not</em> fixed parameters. They are a function of the input itself — the graph rewires for every sentence. This is what distinguishes Transformer attention from conventional fixed-weight graph convolution.</p>
+
+            <div class="def-block green" data-label="Geometric Interpretation">
+                <p>Each layer repositions every token vector in ℝ⁵¹². The token "bank" starts at the same point in ℝ⁵¹² regardless of sentence. After 6 encoder layers, "bank" in "river bank" has been moved to point <strong>A</strong>, while "bank" in "bank account" has been moved to point <strong>B</strong> — via 6 rounds of context-informed corrections accumulated from neighbouring tokens.</p>
+                <div class="math" style="background:transparent; border:none; padding:0.5rem 0 0;">
+                    Sentence A:  z_bank = x_bank + Σ_{ℓ} δ^(ℓ)_{bank | river context}<br>
+                    Sentence B:  z_bank = x_bank + Σ_{ℓ} δ^(ℓ)_{bank | account context}<br>
+                    <span class="comment">// same start, same update rule, different corrections → different endpoints</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 5
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 05</div>
+            <div class="section-title">Multi-Head Attention — 8 Parallel Representation Subspaces</div>
+        </div>
+        <div class="section-body cf">
+
+            <div class="annotation blue">
+                <span class="ann-title">Dimensions</span>
+                d_model = 512<br>
+                h = 8 heads<br>
+                d_k = d_v = 512/8 = 64<br><br>
+                Each head projects into a 64-dim subspace — lower dim, but 8 independent views.
+            </div>
+
+            <p>A single attention head computes one set of attention weights — one "perspective" on the sequence. Multi-Head Attention runs <em>h = 8</em> independent attention heads in parallel, each learning to focus on a different type of relational structure (subject-verb, coreference, positional proximity, etc.). No head is explicitly assigned a role — these emerge from training.</p>
+
+            <div class="math">
+                For head i (i = 1..8):<br>
+                Q_i = X · W^Q_i,   W^Q_i ∈ ℝ^(512×64)<br>
+                K_i = X · W^K_i,   W^K_i ∈ ℝ^(512×64)<br>
+                V_i = X · W^V_i,   W^V_i ∈ ℝ^(512×64)<br><br>
+                head_i = Attention(Q_i, K_i, V_i)<br><br>
+                MHA(X) = Concat(head_1, ..., head_8) · W^O<br>
+                <span class="comment">// W^O ∈ ℝ^(512×512) — projects concatenation back to d_model</span>
+            </div>
+
+            <h3>Why Projection into Subspaces?</h3>
+            <p>Each head operates in a lower-dimensional subspace (ℝ⁶⁴ rather than ℝ⁵¹²). This is not just a computational trick — it forces each head to specialise. A single full-dimensional head would try to capture all relationship types simultaneously with a single query-key dot product. 8 heads in 64-dimensional subspaces can each develop a distinct geometric basis for measuring token similarity.</p>
+
+            <h3>PyTorch Implementation</h3>
+
+            <pre><code><span class="kw">class</span> <span class="fn">EncoderLayer</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d_model=512, num_heads=8, d_ff=2048, dropout=0.1):
+        super().__init__()
+        <span class="c"># Sub-layer 1: 8 heads, each in d_k=64 dim subspace</span>
+        self.self_attn = MultiHeadAttention(d_model, num_heads)
+        <span class="c"># Sub-layer 2: pointwise MLP — same weights applied to each position</span>
+        self.ffn       = PositionwiseFFN(d_model, d_ff)
+        self.norm1     = nn.LayerNorm(d_model)  <span class="c"># γ, β ∈ ℝ^512, learned</span>
+        self.norm2     = nn.LayerNorm(d_model)
+        self.dropout   = nn.Dropout(dropout)
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, mask=None):
+        <span class="c"># Q = K = V = x  →  self-attention (tokens attend to themselves)</span>
+        attn_out = self.self_attn(x, x, x, mask)         <span class="c"># [B, n, 512]</span>
+        x = self.norm1(x + self.dropout(attn_out))       <span class="c"># Add & Norm</span>
+
+        ffn_out = self.ffn(x)                            <span class="c"># [B, n, 512]</span>
+        x = self.norm2(x + self.dropout(ffn_out))        <span class="c"># Add & Norm</span>
+
+        <span class="kw">return</span> x  <span class="c"># [B, n, 512] — shape invariant ✓</span></code></pre>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         STEP 6
+    ══════════════════════════════════════════ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="step-num">STEP 06</div>
+            <div class="section-title">Shape Flow and Encoder Output</div>
+        </div>
+        <div class="section-body">
+
+            <p>One of the encoder's defining properties is shape invariance — every transformation preserves the tensor dimensions. This is what enables N identical layers to be composed without any adapter or projection between them.</p>
+
+            <table>
+                <thead>
+                    <tr><th>Stage</th><th>Operation</th><th>Tensor Shape</th><th>Notes</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Raw token IDs</td><td>Tokenisation</td><td>[n]</td><td>Integer indices into vocabulary</td></tr>
+                    <tr><td>Token embeddings</td><td>Row lookup: E[token_ids]</td><td>[n × 512]</td><td>E ∈ ℝ^(|V|×512), learned</td></tr>
+                    <tr><td>+ Positional enc.</td><td>X = embed + PE (elementwise)</td><td>[n × 512]</td><td>PE fixed sinusoidal, same shape</td></tr>
+                    <tr><td>After MHA (×6)</td><td>8 heads → concat → W^O projection</td><td>[n × 512]</td><td>Each head: [n×64], concat: [n×512]</td></tr>
+                    <tr><td>After FFN (×6)</td><td>W₁→ReLU→W₂ per position</td><td>[n × 512]</td><td>d_ff=2048 intermediate, then back to 512</td></tr>
+                    <tr><td>After LayerNorm (×12)</td><td>Normalise over d_model dim</td><td>[n × 512]</td><td>γ, β ∈ ℝ^512 per norm layer</td></tr>
+                    <tr class="hl"><td>Z⁽⁶⁾ — final output</td><td>After all 6 layers</td><td>[n × 512]</td><td>Passed to decoder as K, V</td></tr>
+                </tbody>
+            </table>
+
+            <h3>What the Encoder Output Represents</h3>
+            <p>The matrix Z⁽⁶⁾ ∈ ℝⁿˣ⁵¹² is a <em>continuous manifold embedding</em> of the input sequence. Each row z_i⁽⁶⁾ encodes not just the identity of token <em>i</em>, but its syntactic role, its semantic meaning in this specific context, and its relationships to every other token — accumulated across 6 layers of attention-weighted aggregation and nonlinear transformation.</p>
+
+            <p>This output is passed to each of the 6 decoder layers as the <strong>Keys</strong> and <strong>Values</strong> in cross-attention. The decoder will query these representations to generate the output sequence — but that is the subject of the next section.</p>
+
+            <div class="def-block" data-label="Summary — Encoder in One Expression">
+                <div class="math" style="background:transparent; border:none; padding:0;">
+                    Z⁽⁶⁾ = f_6 ∘ f_5 ∘ f_4 ∘ f_3 ∘ f_2 ∘ f_1(X + PE)<br><br>
+                    where each f_ℓ(Z) = LayerNorm(A + FFN(A))<br>
+                    and         A     = LayerNorm(Z + MHA(Z, Z, Z))<br><br>
+                    f_enc : ℝ^(n × d_model) → ℝ^(n × d_model)<br>
+                    <span class="comment">// shape invariant · fully parallel · no recurrence · O(1) path length between any two tokens</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- NEXT UP -->
+    <div class="next-up">
+        <div>
+            <span class="next-up-label">Next Section</span>
+            <h2>The Decoder</h2>
+            <p>Cross-attention. Causal masking. Autoregressive generation. Q from decoder, K and V from encoder. Why three sub-layers instead of two.</p>
+        </div>
+        <a href="#" class="next-btn">NEXT → DECODER</a>
+    </div>
+
+</div>
+</body>
+</html>
