@@ -58,8 +58,8 @@
             background: var(--bg);
             border: 2px solid var(--border);
             padding: 8px 16px;
-            border-radius: 0px; /* Sharper edges than previous */
-            box-shadow: -4px 4px 0px var(--border); /* Shadow reversed */
+            border-radius: 0px;
+            box-shadow: -4px 4px 0px var(--border);
             transition: all 0.15s ease;
         }
         .btn:hover { background: var(--lavender); transform: translate(2px, -2px); box-shadow: -6px 6px 0px var(--border); }
@@ -209,12 +209,12 @@
 
         <header>
             <h1>Engineering Note: Hybrid RAG Architecture (FAISS + Neo4j)</h1>
-            <span class="meta-tag">Architecture // Vectors & Graphs</span>
+            <span class="meta-tag">Architecture // Vectors &amp; Graphs</span>
         </header>
 
         <div class="stats">
             <div class="stat-box"><h2>Dual</h2><p>Engine Core</p></div>
-            <div class="stat-box"><h2>$n$-hop</h2><p>Logic Depth</p></div>
+            <div class="stat-box"><h2><i>n</i>-hop</h2><p>Logic Depth</p></div>
             <div class="stat-box"><h2>0%</h2><p>Hallucination</p></div>
             <div class="stat-box"><h2>100%</h2><p>Traceability</p></div>
         </div>
@@ -228,12 +228,12 @@
             <div class="architecture-flow">
                 <div class="arch-node faiss">
                     <strong>FAISS</strong>
-                    <span>Dense Vector Engine. Localizes unstructured chunks & abstracts via high-dimensional embedding similarity.</span>
+                    <span>Dense Vector Engine. Localizes unstructured chunks &amp; abstracts via high-dimensional embedding similarity.</span>
                 </div>
                 <div class="arch-connector">+</div>
                 <div class="arch-node neo4j">
                     <strong>Neo4j</strong>
-                    <span>Knowledge Graph Engine. Traverses explicit Subject $\rightarrow$ Predicate $\rightarrow$ Object triples to extract exact lineage.</span>
+                    <span>Knowledge Graph Engine. Traverses explicit Subject &rarr; Predicate &rarr; Object triples to extract exact lineage.</span>
                 </div>
                 <div class="arch-connector" style="grid-column: 1 / -1; margin-top: 10px;">&darr;</div>
                 <div class="arch-node llm">
@@ -249,7 +249,7 @@
                 <ul>
                     <li><strong>Context Dilution:</strong> Vector search retrieves whole chunks of text based on keyword/semantic similarity. When queries span multiple topics, the retriever pulls bloated, noisy paragraphs, diluting the relevant information passed to the LLM context window.</li>
                     <li><strong>Lack of Multi-Step Logical Reasoning:</strong> Vector embeddings map text into continuous space using cosine distance. They cannot natively trace multi-hop logic chains across different documents (e.g., <em>"Which optimization technique introduced in Paper A improves Metric B on Model C?"</em>).</li>
-                    <li><strong>Catastrophic Forgetting & Static Stagnation:</strong> Updating vector indices when new literature arrives often requires full re-indexing or leads to fragmented, duplicate text chunks where entity relationships and paper lineage get lost over time.</li>
+                    <li><strong>Catastrophic Forgetting &amp; Static Stagnation:</strong> Updating vector indices when new literature arrives often requires full re-indexing or leads to fragmented, duplicate text chunks where entity relationships and paper lineage get lost over time.</li>
                 </ul>
             </div>
 
@@ -258,7 +258,7 @@
                 <p>By coupling FAISS and Neo4j into a unified hybrid retrieval layer, the system achieved several architectural breakthroughs:</p>
 
                 <ul>
-                    <li><strong>Zero-Hallucination Multi-Hop Reasoning:</strong> The backend executes variable-length Cypher traversals in Neo4j to collect explicit $n$-hop entity sub-graphs, enabling the LLM to answer complex multi-step research questions with 100% deterministic accuracy.</li>
+                    <li><strong>Zero-Hallucination Multi-Hop Reasoning:</strong> The backend executes variable-length Cypher traversals in Neo4j to collect explicit <i>n</i>-hop entity sub-graphs, enabling the LLM to answer complex multi-step research questions with 100% deterministic accuracy.</li>
                     <li><strong>Isolated, Noise-Free Context:</strong> Instead of sending massive, unstructured text blocks to Gemini, the system feeds it structured sub-graph tuples alongside targeted vector hits, significantly reducing token consumption and eliminating context dilution.</li>
                     <li><strong>Idempotent Long-Term Memory:</strong> New papers are merged into Neo4j using Cypher <span class="inline-code">MERGE</span> transactions, updating entity citation counts (<span class="inline-code">mention_count</span>) and appending source DOIs without breaking prior index states or requiring full database rebuilds.</li>
                     <li><strong>Full Citation Provenance:</strong> Every relationship edge in the graph maintains an explicit lineage pointer back to its originating paper DOI, ensuring all AI-generated claims can be traced back to the primary source.</li>
