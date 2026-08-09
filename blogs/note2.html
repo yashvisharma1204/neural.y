@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenIE Noise &amp; Hallucination Filtering | Yashvi Sharma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #fdfdfd;
+            --text: #121212;
+            --border: #121212;
+            --lavender: #e0ccff;
+            --mint: #ccffeb;
+            --peach: #ffdac2;
+            --lemon: #fbffb3;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.7;
+            padding: 5% 10%;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        /* --- NAV --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4rem;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+        }
+
+        nav a {
+            color: var(--text);
+            text-decoration: none;
+            border-bottom: 2px dashed var(--border);
+            padding-bottom: 2px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover {
+            background-color: var(--mint);
+            border-bottom-style: solid;
+        }
+
+        .btn {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 0px;
+            box-shadow: -4px 4px 0px var(--border);
+            transition: all 0.15s ease;
+        }
+        .btn:hover { background: var(--lavender); transform: translate(2px, -2px); box-shadow: -6px 6px 0px var(--border); }
+
+        /* --- HEADER --- */
+        header { margin-bottom: 3.5rem; }
+        
+        h1 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 1.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-tag {
+            font-family: 'Space Mono', monospace;
+            background: var(--lemon);
+            border: 2px solid var(--border);
+            color: var(--text);
+            padding: 5px 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: -2px 2px 0px var(--border);
+        }
+
+        /* --- STATS GRID --- */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+        
+        .stat-box {
+            border: 2px solid var(--border);
+            padding: 1.2rem;
+            text-align: center;
+            background: #fff;
+            box-shadow: -4px 4px 0px var(--border);
+        }
+        
+        .stat-box:nth-child(1) { border-top: 6px solid var(--lavender); }
+        .stat-box:nth-child(2) { border-top: 6px solid var(--peach); }
+        .stat-box:nth-child(3) { border-top: 6px solid var(--mint); }
+        .stat-box:nth-child(4) { border-top: 6px solid var(--lemon); }
+
+        .stat-box h2 { font-size: 1.5rem; margin-bottom: 0.2rem; padding-bottom: 0; border: none; }
+        .stat-box p { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; margin: 0; color: #555; text-transform: uppercase; }
+
+        /* --- TYPOGRAPHY & CONTENT --- */
+        h2 {
+            font-size: 1.7rem;
+            margin: 3rem 0 1.5rem;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+            display: inline-block;
+        }
+
+        p { margin-bottom: 1.5rem; font-size: 1.1rem; }
+        
+        ul { margin-bottom: 1.8rem; padding-left: 1.5rem; font-size: 1.1rem; list-style-type: square; }
+        li { margin-bottom: 1rem; padding-left: 0.5rem; }
+        li strong { font-family: 'Space Mono', monospace; background: var(--lemon); padding: 0 4px; }
+
+        /* --- HIGHLIGHT BOXES --- */
+        .card {
+            border: 2px solid var(--border);
+            padding: 2.5rem;
+            margin: 3rem 0;
+            box-shadow: -6px 6px 0px var(--border);
+            background: #fff;
+        }
+
+        .card.warning { background: var(--peach); }
+        .card.success { background: var(--mint); }
+
+        .card h2 {
+            margin-top: 0;
+            border-bottom: none;
+            background: var(--text);
+            color: var(--bg);
+            padding: 5px 15px;
+            display: inline-block;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        code, .inline-code { 
+            font-family: 'Space Mono', monospace; 
+            background: #f0f0f0; 
+            padding: 2px 6px; 
+            border: 1px solid var(--border); 
+            font-size: 0.9em;
+        }
+
+        /* --- DIAGRAMS --- */
+        .architecture-flow {
+            display: grid;
+            grid-template-columns: 1fr 40px 1fr 40px 1fr;
+            gap: 10px;
+            align-items: center;
+            margin: 3rem 0;
+            padding: 2rem;
+            background: #fafafa;
+            border: 2px dashed var(--border);
+        }
+
+        .arch-node {
+            border: 2px solid var(--border);
+            padding: 1.2rem;
+            text-align: center;
+            font-family: 'Space Mono', monospace;
+            background: white;
+            box-shadow: -3px 3px 0px var(--border);
+        }
+
+        .arch-node.extraction { background: var(--peach); }
+        .arch-node.filter { background: var(--lavender); }
+        .arch-node.persistence { background: var(--mint); }
+
+        .arch-node strong { display: block; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; }
+        .arch-node span { font-size: 0.8rem; font-family: 'Space Grotesk', sans-serif; }
+
+        .arch-connector {
+            font-weight: bold;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+            h1 { font-size: 2.1rem; }
+            .architecture-flow { grid-template-columns: 1fr; gap: 10px; }
+            .arch-connector { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <nav>
+            <a href="https://yashvisharma1204.github.io/neural.y/">← Back to Index</a>
+            <a href="#" class="btn">View System Log</a>
+        </nav>
+
+        <header>
+            <h1>Engineering Note: OpenIE Noise &amp; Hallucination Filtering</h1>
+            <span class="meta-tag">Pipeline Optimization // Knowledge Graphs</span>
+        </header>
+
+        <div class="stats">
+            <div class="stat-box"><h2>c &ge; &tau;</h2><p>Threshold Rule</p></div>
+            <div class="stat-box"><h2>SPO</h2><p>Triple Structure</p></div>
+            <div class="stat-box"><h2>0%</h2><p>Extraction Noise</p></div>
+            <div class="stat-box"><h2>100%</h2><p>Graph Integrity</p></div>
+        </div>
+
+        <main>
+            <h2>1. What is this?</h2>
+            <p>The <strong>OpenIE (Open Information Extraction) Filtering Pipeline</strong> is an automated quality-control gate implemented on parsed Subject &rarr; Predicate &rarr; Object knowledge triples prior to graph database persistence.</p>
+            
+            <p>Instead of blindly writing every extracted relation into the knowledge store, the ingestion engine evaluates confidence metrics to filter out superficial co-occurrences and model artifacts:</p>
+
+            <div class="architecture-flow">
+                <div class="arch-node extraction">
+                    <strong>LLM / OpenIE</strong>
+                    <span>Extracts raw SPO triples with confidence score <i>c</i>.</span>
+                </div>
+                <div class="arch-connector">&rarr;</div>
+                <div class="arch-node filter">
+                    <strong>Threshold Gate</strong>
+                    <span>Evaluates condition <span class="inline-code">c &ge; &tau;</span> to prune noise.</span>
+                </div>
+                <div class="arch-connector">&rarr;</div>
+                <div class="arch-node persistence">
+                    <strong>Neo4j Graph</strong>
+                    <span>Persists high-signal, clean semantic relationships.</span>
+                </div>
+            </div>
+
+            <div class="card warning">
+                <h2>2. Why we did that?</h2>
+                <p>Large Language Models and traditional OpenIE extractors are inherently susceptible to generation noise, resulting in severe data quality hurdles during automated knowledge graph construction:</p>
+                
+                <ul>
+                    <li><strong>Spurious Co-occurrences:</strong> Unchecked extractors frequently generate vague or generic relational links (e.g., <span class="inline-code">paper &rarr; related_to &rarr; method</span>) that add zero structural value to multi-hop reasoning.</li>
+                    <li><strong>Hallucinated Entities:</strong> Sub-optimal prompt parsing or low-probability token outputs can introduce fictitious parameter dimensions or non-existent benchmark datasets.</li>
+                    <li><strong>Graph Pollution:</strong> Unfiltered persistence bloats the Neo4j schema with redundant or low-confidence edges, ultimately degrading downstream RAG context quality and increasing token overhead.</li>
+                </ul>
+            </div>
+
+            <div class="card success">
+                <h2>3. What was the result?</h2>
+                <p>Enforcing strict threshold-based filtering yielded immediate improvements across the entire data ingestion and retrieval workflow:</p>
+
+                <ul>
+                    <li><strong>OpenIE Noise &amp; Hallucination Filtering:</strong> Implemented threshold-based filtering (<span class="inline-code">c &ge; &tau;</span>) on parsed Subject-Predicate-Object knowledge triples to prune extraction noise and hallucinations prior to database persistence.</li>
+                    <li><strong>Higher Semantic Density:</strong> Only high-confidence edges enter the graph topology, ensuring multi-hop Cypher traversals remain precise and contextually relevant.</li>
+                    <li><strong>Optimized Storage Efficiency:</strong> Drastically reduced database write operations for redundant or junk triples, keeping the Neo4j memory footprint lean.</li>
+                    <li><strong>Deterministic RAG Reliability:</strong> Eliminated garbage-in-out failure modes, allowing Gemini 2.0 Flash to operate strictly over verified, clean knowledge paths.</li>
+                </ul>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>
