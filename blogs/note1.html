@@ -3,270 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid RAG Architecture | Yashvi Sharma</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <title>Hybrid RAG Architecture — Engineering Note</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg: #fdfdfd;
-            --text: #121212;
-            --border: #121212;
-            --lavender: #e0ccff;
-            --mint: #ccffeb;
-            --peach: #ffdac2;
-            --lemon: #fbffb3;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Space Grotesk', sans-serif;
-            line-height: 1.7;
-            padding: 5% 10%;
+            background: #f9f9f9;
+            color: #111;
+            font-family: 'Geist Mono', monospace;
+            font-size: 13px;
+            font-weight: 300;
+            line-height: 1.8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 60px 24px 80px;
         }
 
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
 
-        /* --- NAV --- */
         nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4rem;
-            font-family: 'Space Mono', monospace;
-            font-weight: 700;
+            margin-bottom: 56px;
+            font-size: 11px;
+            color: #888;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta {
+            display: flex; gap: 28px; flex-wrap: wrap;
+            font-size: 11px; color: #888;
+            padding-top: 16px; border-top: 1px solid #e8e8e8;
+        }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 22px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #fecdd3; }
+        .stat:nth-child(2) { background: #bbf7d0; }
+        .stat:nth-child(3) { background: #bae6fd; }
+        .stat:nth-child(4) { background: #fef08a; }
+
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+
+        h3 {
+            font-size: 10px; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.18em; color: #888;
+            margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8;
         }
 
-        nav a {
-            color: var(--text);
-            text-decoration: none;
-            border-bottom: 2px dashed var(--border);
-            padding-bottom: 2px;
-            transition: all 0.2s;
+        ul { margin: 0 0 14px 0; padding-left: 20px; color: #333; font-size: 13px; }
+        li { margin-bottom: 10px; }
+        li strong { font-weight: 400; color: #111; }
+
+        code {
+            font-family: 'Geist Mono', monospace; font-size: 0.9em;
+            background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8;
         }
 
-        nav a:hover {
-            background-color: var(--mint);
-            border-bottom-style: solid;
+        .note {
+            border-left: 2px solid #e8e8e8; padding: 10px 16px;
+            margin: 14px 0; font-size: 12px; color: #555;
         }
+        .note.yellow { border-color: #111; background: #fef08a; }
+        .note.green  { border-color: #111; background: #bbf7d0; }
+        .note.purple { border-color: #111; background: #fecdd3; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
 
-        .btn {
-            background: var(--bg);
-            border: 2px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 0px;
-            box-shadow: -4px 4px 0px var(--border);
-            transition: all 0.15s ease;
-        }
-        .btn:hover { background: var(--lavender); transform: translate(2px, -2px); box-shadow: -6px 6px 0px var(--border); }
-
-        /* --- HEADER --- */
-        header { margin-bottom: 3.5rem; }
-        
-        h1 {
-            font-size: 2.6rem;
-            font-weight: 700;
-            line-height: 1.15;
-            margin-bottom: 1.2rem;
-            letter-spacing: -0.02em;
-        }
-
-        .meta-tag {
-            font-family: 'Space Mono', monospace;
-            background: var(--lavender);
-            border: 2px solid var(--border);
-            color: var(--text);
-            padding: 5px 12px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            box-shadow: -2px 2px 0px var(--border);
-        }
-
-        /* --- STATS GRID --- */
-        .stats {
+        .flow {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 4rem;
-        }
-        
-        .stat-box {
-            border: 2px solid var(--border);
-            padding: 1.2rem;
-            text-align: center;
-            background: #fff;
-            box-shadow: -4px 4px 0px var(--border);
-        }
-        
-        .stat-box:nth-child(1) { border-top: 6px solid var(--peach); }
-        .stat-box:nth-child(2) { border-top: 6px solid var(--mint); }
-        .stat-box:nth-child(3) { border-top: 6px solid var(--lavender); }
-        .stat-box:nth-child(4) { border-top: 6px solid var(--lemon); }
-
-        .stat-box h2 { font-size: 1.6rem; margin-bottom: 0.2rem; padding-bottom: 0; border: none; }
-        .stat-box p { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; margin: 0; color: #555; text-transform: uppercase; }
-
-        /* --- TYPOGRAPHY & CONTENT --- */
-        h2 {
-            font-size: 1.7rem;
-            margin: 3rem 0 1.5rem;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--border);
-            display: inline-block;
-        }
-
-        p { margin-bottom: 1.5rem; font-size: 1.1rem; }
-        
-        ul { margin-bottom: 1.8rem; padding-left: 1.5rem; font-size: 1.1rem; list-style-type: square; }
-        li { margin-bottom: 1rem; padding-left: 0.5rem; }
-        li strong { font-family: 'Space Mono', monospace; background: var(--lemon); padding: 0 4px; }
-
-        /* --- HIGHLIGHT BOXES --- */
-        .card {
-            border: 2px solid var(--border);
-            padding: 2.5rem;
-            margin: 3rem 0;
-            box-shadow: -6px 6px 0px var(--border);
-            background: #fff;
-        }
-
-        .card.warning { background: var(--peach); }
-        .card.success { background: var(--mint); }
-
-        .card h2 {
-            margin-top: 0;
-            border-bottom: none;
-            background: var(--text);
-            color: var(--bg);
-            padding: 5px 15px;
-            display: inline-block;
-            font-family: 'Space Mono', monospace;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-        }
-
-        code, .inline-code { 
-            font-family: 'Space Mono', monospace; 
-            background: #f0f0f0; 
-            padding: 2px 6px; 
-            border: 1px solid var(--border); 
-            font-size: 0.9em;
-        }
-
-        /* --- DIAGRAMS (DUAL ENGINE) --- */
-        .architecture-flow {
-            display: grid;
-            grid-template-columns: 1fr 40px 1fr;
-            gap: 15px;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
             align-items: center;
-            margin: 3rem 0;
-            padding: 2rem;
+            margin: 14px 0;
+            padding: 20px;
+            border: 1px dashed #ccc;
             background: #fafafa;
-            border: 2px dashed var(--border);
         }
-
-        .arch-node {
-            border: 2px solid var(--border);
-            padding: 1.2rem;
+        .flow-node {
+            border: 1px solid #111;
+            padding: 14px;
+            font-size: 11px;
             text-align: center;
-            font-family: 'Space Mono', monospace;
-            background: white;
-            box-shadow: -3px 3px 0px var(--border);
+            line-height: 1.6;
         }
-
-        .arch-node.faiss { background: var(--lavender); }
-        .arch-node.neo4j { background: var(--lemon); }
-        .arch-node.llm { grid-column: 1 / -1; background: var(--text); color: white; margin-top: 1rem; }
-
-        .arch-node strong { display: block; font-size: 1.1rem; margin-bottom: 5px; text-transform: uppercase; }
-        .arch-node span { font-size: 0.85rem; font-family: 'Space Grotesk', sans-serif; }
-
-        .arch-connector {
-            font-weight: bold;
-            font-size: 1.5rem;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .stats { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-            h1 { font-size: 2.1rem; }
-            .architecture-flow { grid-template-columns: 1fr; gap: 10px; }
-            .arch-connector { transform: rotate(90deg); }
-        }
+        .flow-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 4px; }
+        .flow-node.faiss  { background: #bae6fd; }
+        .flow-node.neo4j  { background: #fef08a; }
+        .flow-node.llm    { grid-column: 1 / -1; background: #111; color: white; margin-top: 8px; }
+        .flow-node.llm strong { color: #aaa; }
+        .flow-conn { text-align: center; font-size: 16px; color: #888; }
+        .flow-down { grid-column: 1 / -1; text-align: center; font-size: 16px; color: #888; }
     </style>
 </head>
 <body>
+<div class="wrap">
 
-    <div class="container">
-        <nav>
-            <a href="https://yashvisharma1204.github.io/neural.y/">← Back to Index</a>
-            <a href="#" class="btn">View System Log</a>
-        </nav>
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Project — Research Agent</span>
+    </nav>
 
-        <header>
-            <h1>Engineering Note: Hybrid RAG Architecture (FAISS + Neo4j)</h1>
-            <span class="meta-tag">Architecture // Vectors &amp; Graphs</span>
-        </header>
-
-        <div class="stats">
-            <div class="stat-box"><h2>Dual</h2><p>Engine Core</p></div>
-            <div class="stat-box"><h2><i>n</i>-hop</h2><p>Logic Depth</p></div>
-            <div class="stat-box"><h2>0%</h2><p>Hallucination</p></div>
-            <div class="stat-box"><h2>100%</h2><p>Traceability</p></div>
+    <div class="cover">
+        <span class="cover-label">Engineering Note — Architecture</span>
+        <h1>Hybrid RAG Architecture (FAISS + Neo4j)</h1>
+        <p class="cover-sub">Merging dense vector search with knowledge graph traversal into a single retrieval engine</p>
+        <div class="cover-meta">
+            <span><strong>Type</strong>Architecture</span>
+            <span><strong>Engines</strong>FAISS + Neo4j</span>
+            <span><strong>LLM</strong>Gemini 2.0 Flash</span>
+            <span><strong>Pattern</strong>Hybrid RAG</span>
         </div>
-
-        <main>
-            <h2>1. What is this?</h2>
-            <p>The <strong>Hybrid RAG (Retrieval-Augmented Generation) Architecture</strong> is a dual-engine retrieval system that merges probabilistic vector search (FAISS) with deterministic knowledge graph traversal (Neo4j).</p>
-            
-            <p>Instead of relying on a single method to fetch context for the LLM (Google Gemini 2.0 Flash), the system splits the retrieval responsibility:</p>
-
-            <div class="architecture-flow">
-                <div class="arch-node faiss">
-                    <strong>FAISS</strong>
-                    <span>Dense Vector Engine. Localizes unstructured chunks &amp; abstracts via high-dimensional embedding similarity.</span>
-                </div>
-                <div class="arch-connector">+</div>
-                <div class="arch-node neo4j">
-                    <strong>Neo4j</strong>
-                    <span>Knowledge Graph Engine. Traverses explicit Subject &rarr; Predicate &rarr; Object triples to extract exact lineage.</span>
-                </div>
-                <div class="arch-connector" style="grid-column: 1 / -1; margin-top: 10px;">&darr;</div>
-                <div class="arch-node llm">
-                    <strong>Gemini 2.0 Flash</strong>
-                    <span>Unified, noise-free context window</span>
-                </div>
-            </div>
-
-            <div class="card warning">
-                <h2>2. Why we did that?</h2>
-                <p>Traditional RAG pipelines rely exclusively on vector databases (e.g., Pinecone, Chroma, FAISS). While vector search is fast and effective for basic semantic matching, it suffers from three fundamental architectural bottlenecks in complex research environments:</p>
-                
-                <ul>
-                    <li><strong>Context Dilution:</strong> Vector search retrieves whole chunks of text based on keyword/semantic similarity. When queries span multiple topics, the retriever pulls bloated, noisy paragraphs, diluting the relevant information passed to the LLM context window.</li>
-                    <li><strong>Lack of Multi-Step Logical Reasoning:</strong> Vector embeddings map text into continuous space using cosine distance. They cannot natively trace multi-hop logic chains across different documents (e.g., <em>"Which optimization technique introduced in Paper A improves Metric B on Model C?"</em>).</li>
-                    <li><strong>Catastrophic Forgetting &amp; Static Stagnation:</strong> Updating vector indices when new literature arrives often requires full re-indexing or leads to fragmented, duplicate text chunks where entity relationships and paper lineage get lost over time.</li>
-                </ul>
-            </div>
-
-            <div class="card success">
-                <h2>3. What was the result?</h2>
-                <p>By coupling FAISS and Neo4j into a unified hybrid retrieval layer, the system achieved several architectural breakthroughs:</p>
-
-                <ul>
-                    <li><strong>Zero-Hallucination Multi-Hop Reasoning:</strong> The backend executes variable-length Cypher traversals in Neo4j to collect explicit <i>n</i>-hop entity sub-graphs, enabling the LLM to answer complex multi-step research questions with 100% deterministic accuracy.</li>
-                    <li><strong>Isolated, Noise-Free Context:</strong> Instead of sending massive, unstructured text blocks to Gemini, the system feeds it structured sub-graph tuples alongside targeted vector hits, significantly reducing token consumption and eliminating context dilution.</li>
-                    <li><strong>Idempotent Long-Term Memory:</strong> New papers are merged into Neo4j using Cypher <span class="inline-code">MERGE</span> transactions, updating entity citation counts (<span class="inline-code">mention_count</span>) and appending source DOIs without breaking prior index states or requiring full database rebuilds.</li>
-                    <li><strong>Full Citation Provenance:</strong> Every relationship edge in the graph maintains an explicit lineage pointer back to its originating paper DOI, ensuring all AI-generated claims can be traced back to the primary source.</li>
-                </ul>
-            </div>
-
-        </main>
     </div>
 
+    <div class="stats">
+        <div class="stat"><span class="stat-n">Dual</span><span class="stat-l">Engine Core</span></div>
+        <div class="stat"><span class="stat-n">n-hop</span><span class="stat-l">Logic Depth</span></div>
+        <div class="stat"><span class="stat-n">0%</span><span class="stat-l">Hallucination</span></div>
+        <div class="stat"><span class="stat-n">100%</span><span class="stat-l">Traceability</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">01</p>
+        <p class="entry-title">What is this?</p>
+        <p>The Hybrid RAG Architecture is a dual-engine retrieval system that merges probabilistic vector search (FAISS) with deterministic knowledge graph traversal (Neo4j). Instead of relying on a single method to fetch context for the LLM, the system splits retrieval responsibility:</p>
+
+        <div class="flow">
+            <div class="flow-node faiss">
+                <strong>FAISS</strong>
+                Dense vector engine. Localises unstructured chunks via high-dimensional embedding similarity.
+            </div>
+            <div class="flow-conn">+</div>
+            <div class="flow-node neo4j">
+                <strong>Neo4j</strong>
+                Knowledge graph engine. Traverses explicit Subject → Predicate → Object triples to extract exact lineage.
+            </div>
+            <div class="flow-down">↓</div>
+            <div class="flow-node llm">
+                <strong>Gemini 2.0 Flash</strong>
+                Unified, noise-free context window
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">02</p>
+        <p class="entry-title">Why we did that?</p>
+        <p>Traditional RAG pipelines rely exclusively on vector databases. While fast and effective for basic semantic matching, they suffer from three fundamental bottlenecks in complex research environments:</p>
+
+        <div class="note yellow">
+            <span class="note-label">Bottleneck 1 — Context Dilution</span>
+            Vector search retrieves whole chunks based on semantic similarity. When queries span multiple topics, the retriever pulls bloated, noisy paragraphs, diluting the relevant information passed to the LLM context window.
+        </div>
+
+        <div class="note yellow">
+            <span class="note-label">Bottleneck 2 — No Multi-Step Reasoning</span>
+            Vector embeddings map text into continuous space using cosine distance. They cannot natively trace multi-hop logic chains across documents — e.g. <em>"Which optimisation technique from Paper A improves Metric B on Model C?"</em>
+        </div>
+
+        <div class="note yellow">
+            <span class="note-label">Bottleneck 3 — Static Stagnation</span>
+            Updating vector indices when new literature arrives often requires full re-indexing, or leads to fragmented duplicate chunks where entity relationships and paper lineage get lost over time.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">03</p>
+        <p class="entry-title">What was the result?</p>
+        <p>By coupling FAISS and Neo4j into a unified hybrid retrieval layer, the system achieved several architectural breakthroughs:</p>
+
+        <div class="note green">
+            <span class="note-label">Zero-Hallucination Multi-Hop Reasoning</span>
+            The backend executes variable-length Cypher traversals in Neo4j to collect explicit n-hop entity sub-graphs, enabling the LLM to answer complex multi-step research questions with 100% deterministic accuracy.
+        </div>
+
+        <div class="note green">
+            <span class="note-label">Isolated, Noise-Free Context</span>
+            Instead of sending massive unstructured text blocks to Gemini, the system feeds it structured sub-graph tuples alongside targeted vector hits — reducing token consumption and eliminating context dilution.
+        </div>
+
+        <div class="note green">
+            <span class="note-label">Idempotent Long-Term Memory</span>
+            New papers are merged into Neo4j using Cypher <code>MERGE</code> transactions, updating entity <code>mention_count</code> and appending source DOIs without breaking prior index states or requiring full rebuilds.
+        </div>
+
+        <div class="note green">
+            <span class="note-label">Full Citation Provenance</span>
+            Every relationship edge in the graph maintains an explicit lineage pointer back to its originating paper DOI, ensuring all AI-generated claims can be traced to the primary source.
+        </div>
+    </section>
+
+</div>
 </body>
 </html>

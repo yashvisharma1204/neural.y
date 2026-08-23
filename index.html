@@ -3,273 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yashvi Sharma | Notebook</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <title>neural.y</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg: #ffffff;
-            --text: #0a0a0a;
-            --border: #0a0a0a;
-            --yellow: #ffe600;
-            --pink: #ff99cc;
-            --blue: #99ccff;
-            --green: #b3ffb3;
-            --dark-blue:#e5edf7;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: url("image.jpg"); 
-            color: var(--text);
-            font-family: 'Space Grotesk', sans-serif;
-            line-height: 1.6;
-            padding: 5% 10%;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* --- PROFILE SECTION --- */
-        .profile-card {
-            background: var(--bg);
-            border: 3px solid var(--border);
-            box-shadow: 6px 6px 0px var(--border);
-            border-radius: 8px;
-            padding: 2.5rem;
-            margin-bottom: 4rem;
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            background-image: radial-gradient(var(--border) 1px, transparent 1px);
-            background-size: 20px 20px;
-            background-color: #fffdf9; /* very slight cream to pop off the white bg */
-        }
-
-        .profile-pic {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--border);
-            background: var(--bg);
-        }
-
-        .profile-info h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.2rem;
-            letter-spacing: -1px;
-        }
-
-        .role {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
-            background: var(--yellow);
-            padding: 4px 10px;
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-
-        .profile-info p {
-            font-size: 1.1rem;
-            margin-bottom: 1.5rem;
-            background: var(--bg); /* readable over the dotted pattern */
-            padding: 5px;
-            border-radius: 4px;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
-            font-weight: 700;
-            text-decoration: none;
-            color: var(--text);
-            background: var(--bg);
-            border: 2px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 4px;
-            box-shadow: 3px 3px 0px var(--border);
-            transition: all 0.1s ease;
-        }
-
-        .btn.github:hover { background: var(--pink); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
-        .btn.linkedin:hover { background: var(--blue); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
-        .btn.email:hover { background: var(--green); transform: translate(-2px, -2px); box-shadow: 5px 5px 0px var(--border); }
-
-        .btn:active {
-            transform: translate(2px, 2px) !important;
-            box-shadow: 1px 1px 0px var(--border) !important;
-        }
-
-        /* --- BLOG SECTION --- */
-        .section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            border-bottom: 3px solid var(--border);
-            padding-bottom: 10px;
-            display: inline-block;
-        }
-
-        .blog-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .project-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-
-        .blog-post {
-            text-decoration: none;
-            color: var(--text);
-            border: 3px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            display: block;
-            box-shadow: 4px 4px 0px var(--border);
-            transition: all 0.1s ease;
-            background: var(--bg);
-        }
-
-        .blog-post:hover {
-            transform: translate(-3px, -3px);
-            box-shadow: 7px 7px 0px var(--border);
             background: #f9f9f9;
-        }
-
-        .blog-post:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px var(--border);
-        }
-
-        .blog-meta {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
-            color: #555;
-            margin-bottom: 0.5rem;
+            color: #111;
+            font-family: 'Geist Mono', monospace;
+            font-size: 13px;
+            font-weight: 300;
+            line-height: 1.8;
+            min-height: 100vh;
             display: flex;
-            gap: 10px;
-            align-items: center;
+            justify-content: center;
+            padding: 60px 24px 80px;
         }
 
-        .tag {
-            background: var(--blue);
-            color: var(--text);
-            padding: 2px 8px;
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            font-weight: 700;
+        .wrap { width: 100%; max-width: 660px; }
+
+        a { color: inherit; text-decoration: none; }
+
+        /* header */
+        .name  { color: #111; font-weight: 400; margin-bottom: 8px; }
+        .bio   { margin-bottom: 40px; }
+
+        .socials { display: flex; gap: 28px; margin-bottom: 56px; }
+        .socials a { border-bottom: 1px solid #aaa; padding-bottom: 2px; transition: color 0.15s; }
+        .socials a:hover { color: #000; }
+
+        /* section */
+        section { margin-bottom: 48px; }
+
+        .label {
+            font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888;
+            margin-bottom: 28px;
         }
 
-        .blog-post h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
+        /* paper card */
+        .paper {
+            border-top: 1px solid #e8e8e8;
+            padding: 22px 0;
         }
+        .paper:last-child { border-bottom: 1px solid #e8e8e8; }
+        .paper-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+        .paper-title { color: #111; font-weight: 400; margin-bottom: 14px; }
+        .paper-img { display: block; max-width: 100%; margin: 0 auto 14px}
+        .paper-sections { list-style: none; padding: 0; margin: 0; }
+        .paper-sections li { padding: 4px 0; border-bottom: 1px dashed #e8e8e8; font-size: 12px; }
+        .paper-sections li:last-child { border-bottom: none; }
+        .paper-sections a { color: #555; transition: color 0.15s; }
+        .paper-sections a:hover { color: #111; }
+        .paper-sections .sec-num { color: #bbb; margin-right: 8px; font-size: 10px; }
 
-        .blog-post p {
-            font-size: 1rem;
-            color: #333;
+        .dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+        .dot-blue   { background: #7dd3fc; }
+        .dot-peach  { background: #fda4af; }
+        .dot-purple { background: #86efac; }
+
+        /* glyphs */
+        .glyph {
+            color: #ccc;
+            font-size: 11px;
+            user-select: none;
         }
 
         @media (max-width: 600px) {
-            .profile-card { flex-direction: column; text-align: center; }
-            .social-links { justify-content: center; flex-wrap: wrap; }
+            body { padding: 64px 24px 80px; }
         }
     </style>
 </head>
 <body>
+<div class="wrap">
 
-    <div class="container">
-        
-        <div class="profile-card">
-            <!-- Replace with your actual photo URL -->
-            <img src="me.png" alt="Yashvi Sharma" class="profile-pic">
-            <div class="profile-info">
-                <h1>Yashvi Sharma</h1>
-                <div class="role">Researcher in Training • AI & ML • SDE Intern</div>
-                <p>Third-year student focused on reading papers, understanding the mathematics behind models, implementing ideas, and preparing to contribute to ML research.</p>
-                <div class="social-links">
-                    <a href="https://github.com/yashvisharma1204" class="btn github">GitHub</a>
-                    <a href="https://linkedin.com/in/yashvisharma1204" class="btn linkedin">LinkedIn</a>
-                </div>
-            </div>
-        </div>
+    <p class="name">✦ Yashvi Sharma</p>
+    <p class="bio">Third-year student. Reading papers, working through the math, building toward research.</p>
 
-        <main>
-            <h2 class="section-title">Research Papers</h2>
-            
-            <div class="blog-list">
-                <!-- <a href="blogs/distillbert.html" class="blog-post">
-                    <div class="blog-meta">
-                        <span class="tag">AI / NLP</span>
-                        <span>Latest Update</span>
-                    </div>
-                    <h3>Shrinking DistilBERT: Pruning, KD & Quantization</h3>
-                    <p>A deep dive into a complete three-stage compression architecture—reducing model size by 2.1× while preserving accuracy.</p>
-                </a> -->
-                <a href="blogs/study1.html" class="blog-post">
-                    <div class="blog-meta">
-                        <span class="tag" style="background: var(--pink);">Section breakdown</span>
-                    </div>
-                    <h3>Transformer Architecture: Encoder</h3>
-                    <p>A detailed breakdown of the encoder component of the Transformer model, including multi-head attention and feed-forward networks.</p>
-                </a>
-                <!-- Example of a future post -->
-                <!-- <a href="#" class="blog-post" style="border-style: dashed; box-shadow: none;">
-                    <div class="blog-meta">
-                        <span class="tag" style="background: var(--yellow);">Draft</span>
-                    </div>
-                    <h3 style="color: #666;">Attention is All You Need</h3>
-                    <p style="color: #888;">Exploring the foundational paper that introduced the Transformer architecture and its impact on NLP.</p>
-                </a> -->
-            </div>
-            <br>
-            <br>
-            <h2 class="section-title">Project: Research Agent</h2>
-            
-            <div class="blog-list">
-                <a href="blogs/note1.html" class="blog-post">
-                    <div class="blog-meta">
-                        <span class="tag" style="background: var(--green);">Notes</span>
-                    </div>
-                    <h3>Why Hybrid RAG Architecture was needed ? </h3>
-                    <p>The Hybrid RAG (Retrieval-Augmented Generation) Architecture is a dual-engine retrieval system that merges probabilistic vector search (FAISS) with deterministic knowledge graph traversal (Neo4j).</p>
-                </a>
-                <a href="blogs/note2.html" class="blog-post">
-                    <div class="blog-meta">
-                        <span class="tag" style="background: var(--green);">Notes</span>
-                    </div>
-                    <h3>OpenIE Noise & Hallucination Filtering</h3>
-                    <p>Implemented threshold-based filtering on parsed Subject-Predicate-Object knowledge triples to prune extraction noise and hallucinations prior to database persistence.</p>
-                </a>
-                <!-- Example of a future post -->
-                <!--<a href="#" class="blog-post" style="border-style: dashed; box-shadow: none;">
-                    <div class="blog-meta">
-                        <span class="tag" style="background: var(--yellow);">Draft</span>
-                    </div>
-                    <h3 style="color: #666;">Attention is All You Need</h3>
-                    <p style="color: #888;">Exploring the foundational paper that introduced the Transformer architecture and its impact on NLP.</p>
-                </a> -->
-            </div>
-        </main>
+    <div class="socials">
+        <a href="https://github.com/yashvisharma1204">github</a>
+        <a href="https://linkedin.com/in/yashvisharma1204">linkedin</a>
     </div>
 
+    <section>
+        <p class="label">⊹ Paper Breakdown</p>
+
+        <div class="paper">
+            <p class="paper-type">Vaswani et al. 2017</p>
+            <p class="paper-title"><span class="dot dot-blue"></span>Attention Is All You Need</p>
+            <img class="paper-img" src="https://ml-digest.com/wp-content/uploads/2024/12/transformer-architecture.png" alt="Attention Is All You Need">
+            <ul class="paper-sections">
+                <li><span class="sec-num">§ 3.1</span><a href="blogs/study1.html">Transformer Architecture: Encoder</a></li>
+                <li><span class="sec-num">§ 3.2</span><a href="blogs/study2.html">Transformer Architecture: Decoder</a></li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <p class="label">˖ Projects</p>
+
+        <div class="paper">
+            <p class="paper-type">Agentic AI</p>
+            <p class="paper-title"><span class="dot dot-peach"></span>Research Agent</p>
+            <ul class="paper-sections">
+                <li><span class="sec-num">01</span><a href="blogs/note1.html">Why Hybrid RAG Architecture was needed</a></li>
+                <li><span class="sec-num">02</span><a href="blogs/note2.html">OpenIE Noise & Hallucination Filtering</a></li>
+            </ul>
+        </div>
+    </section>
+
+</div>
 </body>
 </html>
