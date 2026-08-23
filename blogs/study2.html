@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Decoder — Attention Is All You Need, §3.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
+        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
+        .math-block .katex-display { margin: 0; }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
+        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 10px; color: #888; }
+        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
+        .stack { margin: 14px 0; }
+        .stack-row { display: flex; align-items: stretch; border: 1px solid #111; margin-bottom: -1px; font-size: 11px; }
+        .stack-label { width: 60px; min-width: 60px; background: #111; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; text-align: center; }
+        .stack-content { padding: 8px 12px; flex: 1; }
+        .stack-math { padding: 8px 10px; font-size: 10px; color: #888; text-align: right; min-width: 130px; border-left: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: flex-end; }
+        .stack-row.in { background: #bae6fd; } .stack-row.out { background: #bbf7d0; }
+        .stack-row.l { background: white; } .stack-row.l:nth-child(even) { background: #fafafa; }
+        .stack-arrow { text-align: center; font-size: 11px; color: #888; padding: 2px 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
+        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
+        .card-body { padding: 12px; line-height: 1.7; }
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
+        .graph { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; padding: 20px; border: 1px dashed #ccc; background: #fafafa; }
+        .g-node { width: 64px; height: 64px; border: 1px solid #111; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
+        .g-node .g-sub { font-size: 10px; color: #888; } .g-conn { font-size: 11px; color: #888; }
+        .mask-grid { display: inline-grid; grid-template-columns: repeat(4, 34px); gap: 3px; margin: 14px auto; }
+        .mask-cell { width: 34px; height: 34px; border: 1px solid #111; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .mask-cell.allow { background: #bbf7d0; } .mask-cell.block { background: #f0f0f0; color: #bbb; }
+        .mask-wrap { display: flex; justify-content: center; margin: 14px 0; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
+        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
+        .next p { color: #888; font-size: 12px; margin: 0; }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
+        .next-btn:hover { background: white; border-color: white; }
+        .cf::after { content: ''; display: table; clear: both; }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .stack-math { display: none; } .next { flex-direction: column; }
+            .mask-grid { grid-template-columns: repeat(4, 28px); } .mask-cell { width: 28px; height: 28px; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Vaswani et al. 2017 — §3.1 Decoder</span>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Research Notes — Transformer Architecture</span>
+        <h1>The Decoder</h1>
+        <p class="cover-sub">A complete, paper-accurate mathematical walkthrough — from shifted target sequence to next-token distribution</p>
+        <div class="cover-meta">
+            <span><strong>Paper</strong>Attention Is All You Need</span>
+            <span><strong>Section</strong>§3.1 Decoder Stack</span>
+            <span><strong>Architecture</strong>N=6, d_model=512, h=8, d_ff=2048</span>
+            <span><strong>Core function</strong>$f_{\text{dec}} : \mathbb{R}^{m \times d}\!\times\!\mathbb{R}^{n\times d} \to \mathbb{R}^{m \times |V|}$</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">6</span><span class="stat-l">Layers N</span></div>
+        <div class="stat"><span class="stat-n">3</span><span class="stat-l">Sub-layers</span></div>
+        <div class="stat"><span class="stat-n">4</span><span class="stat-l">Beam size</span></div>
+        <div class="stat"><span class="stat-n">0.1</span><span class="stat-l">Label smooth ε</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">step 01</p>
+        <p class="entry-title">Input Representation — The Shifted Target Sequence</p>
+
+        <p>§3.1: <em>"the decoder generates an output sequence... one element at a time... at each step the model is auto-regressive, consuming the previously generated symbols as additional input."</em> Training exploits this with teacher forcing — the entire target sequence is fed in at once, shifted right by one position, so the prediction at position $i$ never sees the ground-truth token at position $i$.</p>
+
+        <div class="pipeline">
+            <div class="pipe-node"><strong>Target Text</strong>"Le chat"<div class="shape">string</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Shift Right</strong>[&lt;bos&gt;, Le, chat]<div class="shape">$\mathbb{Z}^m$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Embed ·√d</strong>$E \in \mathbb{R}^{|V|\times 512}$<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>+ Pos. Enc.</strong>$Y = E\sqrt{d} + PE$<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+        </div>
+
+        <h3>Output Embedding — Tied Weights</h3>
+        <p>§3.4: <em>"we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation... In the embedding layers, we multiply those weights by $\sqrt{d_{\text{model}}}$."</em> The decoder does not use a separate embedding table from the encoder — it's the same $E$, scaled the same way:</p>
+
+        <div class="math-block">
+            $$y_i = E[\text{target}_{i-1}]\cdot\sqrt{d_{\text{model}}} \in \mathbb{R}^{d_{\text{model}}}, \qquad y_0 = E[\langle\text{bos}\rangle]\cdot\sqrt{d_{\text{model}}}$$
+            $$Y = [y_1;\, y_2;\, \ldots;\, y_m] \in \mathbb{R}^{m \times d_{\text{model}}}$$
+        </div>
+
+        <h3>Positional Encoding</h3>
+        <p>The same fixed sinusoidal scheme from §3.5 is added, giving each decoder position a unique signal, followed by dropout ($P_{drop}=0.1$, §5.4) before entering layer 1:</p>
+
+        <div class="math-block">
+            $$PE(i,\, 2k) = \sin\!\left(\frac{i}{10000^{2k/d}}\right), \quad PE(i,\, 2k{+}1) = \cos\!\left(\frac{i}{10000^{2k/d}}\right)$$
+            $$Y_{\text{final}} = \text{Dropout}(Y + PE) \in \mathbb{R}^{m \times d_{\text{model}}}$$
+        </div>
+
+        <div class="note yellow">
+            <span class="note-label">Critical Distinction</span>
+            The shift-right is what makes training parallel and inference sequential the same task. At train time all $m$ shifted positions are scored in one forward pass; at inference each position is produced one at a time and fed back in as the next input.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 02</p>
+        <p class="entry-title">The 6-Layer Stack — Generation Conditioned on Source</p>
+
+        <div class="note pink">
+            <span class="note-label">Note</span>
+            Decoder layers have their own independent parameters, distinct from the encoder's — except for the shared embedding/output matrix $E$. §3.1 fixes $N=6$, matching the encoder's depth.
+        </div>
+
+        <p>The decoder applies $N = 6$ layers, each mapping $\mathbb{R}^{m\times d} \to \mathbb{R}^{m\times d}$, but — unlike the encoder — every layer also takes the fixed encoder output $Z^{(6)}$ as a second input:</p>
+
+        <div class="math-block">
+            $$D^{(0)} = Y, \qquad D^{(\ell)} = g_\ell\!\left(D^{(\ell-1)},\, Z^{(6)}\right), \quad \ell = 1\ldots 6$$
+        </div>
+
+        <div class="stack">
+            <div class="stack-row in"><div class="stack-label">INPUT</div><div class="stack-content">Y — shifted target embeddings + pos. encoding</div><div class="stack-math">$D^{(0)} \in \mathbb{R}^{m\times 512}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">L 1</div><div class="stack-content">local target syntax, conditioned on source gist</div><div class="stack-math">$D^{(1)} = D^{(0)} + \delta^{(1)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">L 2</div><div class="stack-content">word-order &amp; agreement w.r.t. source tokens</div><div class="stack-math">$D^{(2)} = D^{(1)} + \delta^{(2)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">L 3</div><div class="stack-content">phrase-level alignment to source spans</div><div class="stack-math">$D^{(3)} = D^{(2)} + \delta^{(3)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">L 4</div><div class="stack-content">semantic role transfer from source</div><div class="stack-math">$D^{(4)} = D^{(3)} + \delta^{(4)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">L 5</div><div class="stack-content">discourse-level coherence across generated tokens</div><div class="stack-math">$D^{(5)} = D^{(4)} + \delta^{(5)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l" style="background:#fff1f2;"><div class="stack-label">L 6</div><div class="stack-content">fully resolved, source-grounded target state</div><div class="stack-math">$D^{(6)} = D^{(5)} + \delta^{(6)}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row out"><div class="stack-label">OUTPUT</div><div class="stack-content">$D^{(6)}$ — passed to final linear + softmax</div><div class="stack-math">$D^{(6)} \in \mathbb{R}^{m\times 512}$</div></div>
+        </div>
+
+        <h3>Iterated Refinement, Now Cross-Conditioned</h3>
+        <div class="math-block">
+            $$D^{(\ell)} = D^{(\ell-1)} + \delta^{(\ell)}, \qquad d_i^{(6)} = y_i + \sum_{\ell=1}^{6} \delta_i^{(\ell)}\!\left(D^{(\ell-1)},\, Z^{(6)}\right)$$
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 03</p>
+        <p class="entry-title">Inside One Decoder Layer — Three Sub-layers</p>
+
+        <p>§3.1: <em>"In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization."</em></p>
+
+        <div class="math-block">
+            $$\text{Output} = \text{LayerNorm}(x + \text{Dropout}(\text{Sublayer}(x)))$$
+        </div>
+
+        <div class="three-col">
+            <div class="card">
+                <div class="card-head">Sub-layer 1 — Masked Self-Attention</div>
+                <div class="card-body">
+                    <p>$Q,K,V$ all from the decoder's own sequence so far, but future positions are masked out. A token can only attend to itself and earlier tokens.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$B^{(1)} = \text{LN}(Y + \text{MaskedMHA}(Y,Y,Y))$</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">Sub-layer 2 — Encoder-Decoder Cross-Attention</div>
+                <div class="card-body">
+                    <p>$Q$ from the decoder state, $K$ and $V$ from the encoder output $Z^{(6)}$. This is where source information enters the decoder.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$B^{(2)} = \text{LN}(B^{(1)} + \text{MHA}(B^{(1)}, Z^{(6)}, Z^{(6)}))$</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">Sub-layer 3 — Position-wise FFN</div>
+                <div class="card-body">
+                    <p>Identical in form to the encoder's FFN — a 4× expand-contract MLP applied independently per position, no cross-position mixing.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$D^{(\ell)} = \text{LN}(B^{(2)} + \text{FFN}(B^{(2)}))$</div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Why Three, Not Two</h3>
+        <p>The encoder only needs to relate source tokens to each other. The decoder needs to do two distinct kinds of relating — to its own partial output, and to the source — so attention is split into two sub-layers with different $K,V$ origins, each getting its own residual and normalization.</p>
+
+        <div class="note blue">
+            <span class="note-label">Full Layer Forward Pass</span>
+            $B^{(1)} = \text{LayerNorm}(D^{(\ell-1)} + \text{Dropout}(\text{MaskedMHA}(D^{(\ell-1)}, D^{(\ell-1)}, D^{(\ell-1)})))$<br>
+            $B^{(2)} = \text{LayerNorm}(B^{(1)} + \text{Dropout}(\text{MHA}(B^{(1)}, Z^{(6)}, Z^{(6)})))$<br>
+            $D^{(\ell)} = \text{LayerNorm}(B^{(2)} + \text{Dropout}(\text{FFN}(B^{(2)})))$,&nbsp; $\text{FFN}(x) = \max(0,\, xW_1 + b_1)W_2 + b_2$
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 04</p>
+        <p class="entry-title">Causal Masking — Attention as a DAG, Not a Complete Graph</p>
+
+        <div class="note yellow">
+            <span class="note-label">§3.2.3</span>
+            <em>"We need to prevent leftward information flow in the decoder to preserve the auto-regressive property. We implement this inside of scaled dot-product attention by masking out (setting to $-\infty$) all values in the input of the softmax which correspond to illegal connections."</em>
+        </div>
+
+        <p>Before the softmax in sub-layer 1, positions $j > i$ are set to $-\infty$ so their attention weight collapses to zero:</p>
+
+        <div class="math-block">
+            $$\text{score}_{ij} = \begin{cases} \dfrac{q_i \cdot k_j}{\sqrt{d_k}} & j \le i \\[6pt] -\infty & j > i \end{cases} \qquad a_{ij} = \text{softmax}_j(\text{score}_{ij})$$
+        </div>
+
+        <div class="mask-wrap">
+            <div class="mask-grid">
+                <div class="mask-cell block">1,4</div><div class="mask-cell block">2,4</div><div class="mask-cell block">3,4</div><div class="mask-cell allow">4,4</div>
+                <div class="mask-cell block">1,3</div><div class="mask-cell block">2,3</div><div class="mask-cell allow">3,3</div><div class="mask-cell block">4,3</div>
+                <div class="mask-cell block">1,2</div><div class="mask-cell allow">2,2</div><div class="mask-cell block">3,2</div><div class="mask-cell block">4,2</div>
+                <div class="mask-cell allow">1,1</div><div class="mask-cell block">2,1</div><div class="mask-cell block">3,1</div><div class="mask-cell block">4,1</div>
+            </div>
+        </div>
+        <p style="text-align:center;color:#888;font-size:10px;margin-top:-4px;">rows = query position $i$ (bottom→top = 1→4) · columns = key position $j$ · green = allowed, $j \le i$</p>
+
+        <h3>Numerical Example</h3>
+        <p>For target "Le chat" generating position 3 ("chat"), attention can only see &lt;bos&gt; and "Le" — never a hypothetical position 4:</p>
+        <div class="math-block">
+            $$a_{3,\langle\text{bos}\rangle} = 0.15,\quad a_{3,\text{Le}} = 0.35,\quad a_{3,\text{chat}} = 0.50,\quad a_{3,j>3} = 0$$
+        </div>
+
+        <div class="note green">
+            <span class="note-label">Train vs. Inference Symmetry</span>
+            The mask is what makes teacher-forced training equivalent to the sequential process at inference: even though all $m$ positions are computed in one matrix multiply during training, each position's output is mathematically identical to what it would be if generated one token at a time.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 05</p>
+        <p class="entry-title">Cross-Attention — Where Source Meets Target</p>
+
+        <div class="note blue">
+            <span class="note-label">§3.2.3 — "Encoder-Decoder Attention"</span>
+            <em>"Queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows every position in the decoder to attend over all positions in the input sequence."</em>
+        </div>
+
+        <p>Query comes from $B^{(1)} \in \mathbb{R}^{m\times 512}$ (target length $m$); Key/Value come from $Z^{(6)} \in \mathbb{R}^{n\times 512}$ (source length $n$). $m$ and $n$ need not match — attention weights form an $m\times n$ matrix. $h=8$ heads run in parallel exactly as in self-attention:</p>
+
+        <div class="math-block">
+            $$Q_i = B^{(1)} W^Q_i,\quad K_i = Z^{(6)} W^K_i,\quad V_i = Z^{(6)} W^V_i \qquad W \in \mathbb{R}^{512\times 64}$$
+            $$\text{CrossMHA} = \text{Concat}(\text{head}_1,\ldots,\text{head}_8)\,W^O, \quad \text{head}_i = \text{softmax}\!\left(\frac{Q_iK_i^\top}{\sqrt{64}}\right)V_i$$
+        </div>
+
+        <p>§3.2.3 draws the analogy directly: this mimics the typical encoder-decoder attention mechanisms used in earlier sequence-to-sequence models — the same $Q$-from-target, $K/V$-from-source pattern used in RNN-based attention models like Bahdanau et al., just computed with the same scaled dot-product mechanism as everything else in this model.</p>
+
+        <div class="graph">
+            <div><div class="g-node" style="background:#fef08a;">Le<span class="g-sub">tgt 1</span></div></div>
+            <div class="g-conn">┄┄▶</div>
+            <div><div class="g-node" style="background:#bae6fd;">The<span class="g-sub">src 1</span></div></div>
+            <div class="g-conn">◀┄┄</div>
+            <div><div class="g-node" style="background:#fecdd3;">chat<span class="g-sub">tgt 2</span></div></div>
+            <div class="g-conn">┄┄▶</div>
+            <div><div class="g-node" style="background:#bbf7d0;">cat<span class="g-sub">src 2</span></div></div>
+            <div style="width:100%;text-align:center;font-size:10px;color:#888;border-top:1px dashed #ddd;padding-top:10px;margin-top:8px;">dashed edges cross the source/target boundary · no self-loops needed, source already fixed</div>
+        </div>
+
+        <h3>PyTorch Implementation</h3>
+        <pre><code><span class="kw">class</span> <span class="fn">DecoderLayer</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d_model=512, num_heads=8, d_ff=2048, dropout=0.1):
+        super().__init__()
+        self.self_attn  = MultiHeadAttention(d_model, num_heads)   <span class="c"># masked</span>
+        self.cross_attn = MultiHeadAttention(d_model, num_heads)   <span class="c"># unmasked</span>
+        self.ffn        = PositionwiseFFN(d_model, d_ff)
+        self.norm1      = nn.LayerNorm(d_model)
+        self.norm2      = nn.LayerNorm(d_model)
+        self.norm3      = nn.LayerNorm(d_model)
+        self.dropout    = nn.Dropout(dropout)
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, y, enc_out, tgt_mask, src_mask=None):
+        <span class="c"># Sub-layer 1: masked self-attention, Q=K=V=y</span>
+        a = self.self_attn(y, y, y, tgt_mask)              <span class="c"># [B, m, 512]</span>
+        y = self.norm1(y + self.dropout(a))
+
+        <span class="c"># Sub-layer 2: cross-attention, Q=y, K=V=enc_out</span>
+        c = self.cross_attn(y, enc_out, enc_out, src_mask)  <span class="c"># [B, m, 512]</span>
+        y = self.norm2(y + self.dropout(c))
+
+        <span class="c"># Sub-layer 3: position-wise FFN</span>
+        f = self.ffn(y)                                     <span class="c"># [B, m, 512]</span>
+        y = self.norm3(y + self.dropout(f))
+        <span class="kw">return</span> y  <span class="c"># [B, m, 512] &mdash; shape invariant</span></code></pre>
+    </section>
+
+    <section>
+        <p class="entry-type">step 06</p>
+        <p class="entry-title">Shape Flow, Final Projection, and Decoding</p>
+
+        <p>Every decoder sub-layer preserves $[m \times 512]$, same as the encoder. The one shape change in the whole model happens after the stack, projecting into vocabulary space using the tied embedding matrix:</p>
+
+        <table>
+            <thead><tr><th>Stage</th><th>Operation</th><th>Shape</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>Shifted target IDs</td><td>Right-shift + tokenise</td><td>[m]</td><td>Starts with &lt;bos&gt;</td></tr>
+                <tr><td>Target embeddings</td><td>$E[\text{ids}]\cdot\sqrt{512}$</td><td>[m &times; 512]</td><td>Same $E$ as encoder — §3.4</td></tr>
+                <tr><td>+ Positional enc.</td><td>$Y = \text{embed} + PE$</td><td>[m &times; 512]</td><td>Same sinusoidal scheme</td></tr>
+                <tr><td>After Masked MHA (&times;6)</td><td>causal mask &rarr; 8 heads &rarr; $W^O$</td><td>[m &times; 512]</td><td>$j>i$ weights forced to 0</td></tr>
+                <tr><td>After Cross-MHA (&times;6)</td><td>Q from target, K/V from $Z^{(6)}$</td><td>[m &times; 512]</td><td>Attends over all $n$ source positions</td></tr>
+                <tr><td>After FFN (&times;6)</td><td>$W_1$&rarr;ReLU&rarr;$W_2$ per position</td><td>[m &times; 512]</td><td>$d_{ff}=2048$ intermediate</td></tr>
+                <tr><td>After LayerNorm (&times;18)</td><td>Normalise over $d$ dim</td><td>[m &times; 512]</td><td>3 norms &times; 6 layers</td></tr>
+                <tr><td>$D^{(6)}$ — decoder output</td><td>After all 6 layers</td><td>[m &times; 512]</td><td>Context- and source-aware</td></tr>
+                <tr class="hl"><td>Logits</td><td>$D^{(6)} E^\top$ (tied) &rarr; softmax</td><td>[m &times; |V|]</td><td>Distribution over next token</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note blue">
+            <span class="note-label">Decoder in One Expression</span>
+            $$D^{(6)} = g_6 \circ g_5 \circ g_4 \circ g_3 \circ g_2 \circ g_1(Y + PE;\; Z^{(6)})$$
+            $$P(\text{token}_{i+1}) = \text{softmax}\!\left(D^{(6)}_i\, E^\top\right)$$
+        </div>
+
+        <div class="note gray">
+            <span class="note-label">Trained With — §5.4</span>
+            Label smoothing $\epsilon_{ls}=0.1$ is applied here, at the output distribution — nowhere else in the model. §5.4 notes this hurts perplexity but improves accuracy and BLEU score: the model is deliberately trained to be less confident about the correct token.
+        </div>
+
+        <h3>Inference — Beam Search, Not Greedy</h3>
+        <p>§6.1: the paper decodes with <strong>beam search, beam size 4</strong>, and a length penalty $\alpha = 0.6$. Beam search keeps the top-4 partial sequences by cumulative log-probability at every step instead of committing to a single best token:</p>
+
+        <pre><code>beams = [ ([BOS], 0.0) ]                     <span class="c"># (tokens, log_prob) × 4</span>
+<span class="kw">for</span> step <span class="kw">in</span> range(max_len):
+    candidates = []
+    <span class="kw">for</span> tokens, score <span class="kw">in</span> beams:
+        d = decoder_stack(embed(tokens), enc_out)
+        logp = log_softmax(d[:, -1, :] @ E.T)      <span class="c"># tied weight E</span>
+        <span class="kw">for</span> tok, lp <span class="kw">in</span> top_k(logp, k=4):
+            candidates.append((tokens + [tok], score + lp))
+    beams = top_k_by_score(candidates, k=4, length_penalty=0.6)
+    <span class="kw">if</span> all_ended(beams): <span class="kw">break</span>
+best = beams[0]</code></pre>
+
+        <div class="note green">
+            <span class="note-label">Geometric Interpretation</span>
+            Each generation step re-runs the decoder stack over the growing sequence — no hidden state persists between steps the way it would in an RNN. Position $i$'s representation is recomputed from scratch each time, constrained only by the causal mask and cross-attention to the fixed $Z^{(6)}$. In practice, implementations cache previously computed keys/values (KV-cache) so each new beam step costs $O(1)$ additional work rather than $O(m)$.
+        </div>
+    </section>
+
+    <div class="next">
+        <div>
+            <span class="next-label">Next Section</span>
+            <h2>Why Self-Attention</h2>
+            <p>§4 — complexity per layer, minimum path length, and parallelisability compared to recurrent and convolutional layers.</p>
+        </div>
+        <a href="#" class="next-btn">Next &rarr; §4</a>
+    </div>
+
+</div>
+</body>
+</html>
