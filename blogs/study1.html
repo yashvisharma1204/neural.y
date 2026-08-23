@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformer Encoder — Research Notes</title>
+    <title>The Encoder — Attention Is All You Need, §3.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -11,270 +11,85 @@
         onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background: #f9f9f9;
-            color: #111;
-            font-family: 'Geist Mono', monospace;
-            font-size: 13px;
-            font-weight: 300;
-            line-height: 1.8;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 60px 24px 80px;
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
         }
-
         .wrap { width: 100%; max-width: 660px; }
-
         a { color: inherit; text-decoration: none; }
-
         nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 56px;
-            font-size: 11px;
-            color: #888;
-            border-bottom: 1px solid #e8e8e8;
-            padding-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
         }
         nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
         nav a:hover { color: #111; }
-
-        /* cover */
         .cover { margin-bottom: 56px; }
-        .cover-label {
-            font-size: 10px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: #888;
-            display: block;
-            margin-bottom: 12px;
-        }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
         h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
         .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
-        .cover-meta {
-            display: flex;
-            gap: 28px;
-            flex-wrap: wrap;
-            font-size: 11px;
-            color: #888;
-            padding-top: 16px;
-            border-top: 1px solid #e8e8e8;
-        }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
         .cover-meta span strong { color: #111; display: block; font-weight: 400; }
-
-        /* stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            border: 1px solid #111;
-            margin-bottom: 56px;
-        }
-        .stat {
-            padding: 16px 12px;
-            text-align: center;
-            border-right: 1px solid #111;
-        }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
         .stat:last-child { border-right: none; }
         .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
         .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
-        .stat:nth-child(1) { background: #bae6fd; }
-        .stat:nth-child(2) { background: #fecdd3; }
-        .stat:nth-child(3) { background: #fef08a; }
-        .stat:nth-child(4) { background: #bbf7d0; }
-
-        /* sections */
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
         section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
-
-        .entry-type {
-            font-size: 10px;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: #888;
-            margin-bottom: 10px;
-        }
-
-        .entry-title {
-            font-size: 13px;
-            font-weight: 400;
-            margin-bottom: 16px;
-        }
-
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
         p { margin-bottom: 14px; color: #333; font-size: 13px; }
         p:last-child { margin-bottom: 0; }
-
-        h3 {
-            font-size: 10px;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: #888;
-            margin: 28px 0 10px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #e8e8e8;
-        }
-
-        em { font-style: italic; }
-        strong { font-weight: 400; color: #111; }
-
-        code {
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.9em;
-            background: #f0f0f0;
-            padding: 1px 5px;
-            border: 1px solid #e8e8e8;
-        }
-
-        /* math display blocks */
-        .math-block {
-            background: #f5f5f5;
-            border-left: 2px solid #111;
-            padding: 14px 18px;
-            margin: 14px 0;
-            overflow-x: auto;
-            font-size: 12px;
-        }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
         .math-block .katex-display { margin: 0; }
-
-        /* note box */
-        .note {
-            border-left: 2px solid #e8e8e8;
-            padding: 10px 16px;
-            margin: 14px 0;
-            font-size: 12px;
-            color: #555;
-        }
-        .note.yellow { border-color: #111; background: #fef9c3; }
-        .note.blue   { border-color: #111; background: #eff6ff; }
-        .note.green  { border-color: #111; background: #f0fdf4; }
-        .note.pink   { border-color: #111; background: #fff1f2; }
-        .note-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: #888;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        /* pipeline */
-        .pipeline {
-            display: flex;
-            align-items: center;
-            overflow-x: auto;
-            margin: 14px 0;
-            gap: 0;
-            padding-bottom: 2px;
-        }
-        .pipe-node {
-            border: 1px solid #111;
-            padding: 8px 12px;
-            font-size: 11px;
-            text-align: center;
-            white-space: nowrap;
-            flex-shrink: 0;
-            line-height: 1.6;
-        }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
         .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
         .pipe-node .shape { font-size: 10px; color: #888; }
         .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
-
-        /* layer stack */
         .stack { margin: 14px 0; }
-        .stack-row {
-            display: flex;
-            align-items: stretch;
-            border: 1px solid #111;
-            margin-bottom: -1px;
-            font-size: 11px;
-        }
-        .stack-label {
-            width: 60px; min-width: 60px;
-            background: #111; color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px;
-            text-align: center;
-        }
+        .stack-row { display: flex; align-items: stretch; border: 1px solid #111; margin-bottom: -1px; font-size: 11px; }
+        .stack-label { width: 60px; min-width: 60px; background: #111; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; text-align: center; }
         .stack-content { padding: 8px 12px; flex: 1; }
         .stack-math { padding: 8px 10px; font-size: 10px; color: #888; text-align: right; min-width: 130px; border-left: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: flex-end; }
-        .stack-row.in  { background: #bae6fd; }
-        .stack-row.out { background: #bbf7d0; }
-        .stack-row.l   { background: white; }
-        .stack-row.l:nth-child(even) { background: #fafafa; }
+        .stack-row.in { background: #bae6fd; } .stack-row.out { background: #bbf7d0; }
+        .stack-row.l { background: white; } .stack-row.l:nth-child(even) { background: #fafafa; }
         .stack-arrow { text-align: center; font-size: 11px; color: #888; padding: 2px 0; }
-
-        /* two-col */
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
         .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
         .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
         .card-body { padding: 12px; line-height: 1.7; }
-        .card:nth-child(1) .card-body { background: #eff6ff; }
-        .card:nth-child(2) .card-body { background: #fff1f2; }
-
-        /* code */
-        pre {
-            background: #f5f5f5;
-            color: #111;
-            font-family: 'Geist Mono', monospace;
-            font-size: 11px;
-            line-height: 1.7;
-            padding: 18px 20px;
-            margin: 14px 0;
-            overflow-x: auto;
-            border: 1px solid #111;
-        }
-        pre .c { color: #888; }
-        pre .kw { color: #2563eb; }
-        pre .fn { color: #16a34a; }
-
-        /* table */
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; }
         table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
         th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
         td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
-        td:last-child { border-right: none; }
-        tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: #fafafa; }
-        tr.hl td { background: #bbf7d0; color: #111; }
-
-        /* graph */
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
         .graph { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; padding: 20px; border: 1px dashed #ccc; background: #fafafa; }
         .g-node { width: 64px; height: 64px; border: 1px solid #111; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
-        .g-node .g-sub { font-size: 10px; color: #888; }
-        .g-conn { font-size: 11px; color: #888; }
-
-        /* next */
-        .next {
-            border: 1px solid #111;
-            padding: 28px;
-            margin-top: 48px;
-            background: #111;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
+        .g-node .g-sub { font-size: 10px; color: #888; } .g-conn { font-size: 11px; color: #888; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
         .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
         .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
         .next p { color: #888; font-size: 12px; margin: 0; }
-        .next-btn {
-            background: #fef08a; color: #111; border: 1px solid #fef08a;
-            padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px;
-            text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase;
-        }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
         .next-btn:hover { background: white; border-color: white; }
-
         .cf::after { content: ''; display: table; clear: both; }
-
         @media (max-width: 600px) {
-            .stats { grid-template-columns: repeat(2,1fr); }
-            .two-col { grid-template-columns: 1fr; }
-            h1 { font-size: 17px; }
-            .stack-math { display: none; }
-            .next { flex-direction: column; }
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .stack-math { display: none; } .next { flex-direction: column; }
         }
     </style>
 </head>
@@ -283,13 +98,13 @@
 
     <nav>
         <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
-        <span>Vaswani et al. 2017 — §3.1</span>
+        <span>Vaswani et al. 2017 — §3.1 Encoder</span>
     </nav>
 
     <div class="cover">
         <span class="cover-label">Research Notes — Transformer Architecture</span>
-        <h1>The Transformer Encoder</h1>
-        <p class="cover-sub">A complete mathematical walkthrough — from raw token sequence to contextualised representation</p>
+        <h1>The Encoder</h1>
+        <p class="cover-sub">A complete, paper-accurate mathematical walkthrough — from raw token sequence to contextualised representation</p>
         <div class="cover-meta">
             <span><strong>Paper</strong>Attention Is All You Need</span>
             <span><strong>Section</strong>§3.1 Encoder Stack</span>
@@ -302,40 +117,47 @@
         <div class="stat"><span class="stat-n">6</span><span class="stat-l">Layers N</span></div>
         <div class="stat"><span class="stat-n">512</span><span class="stat-l">d_model</span></div>
         <div class="stat"><span class="stat-n">8</span><span class="stat-l">Heads h</span></div>
-        <div class="stat"><span class="stat-n">2048</span><span class="stat-l">d_ff</span></div>
+        <div class="stat"><span class="stat-n">0.1</span><span class="stat-l">Dropout</span></div>
     </div>
 
     <section>
         <p class="entry-type">step 01</p>
         <p class="entry-title">Input Representation — From Token Sequence to Continuous Matrix</p>
 
-        <p>The encoder operates on continuous vector representations, never raw text. A discrete token sequence must first be projected into a metric space. This happens in three stages:</p>
+        <p>§3.1: <em>"The encoder maps an input sequence of symbol representations... to a sequence of continuous representations."</em> A discrete token sequence must first be projected into a metric space. This happens in three stages:</p>
 
         <div class="pipeline">
             <div class="pipe-node"><strong>Raw Text</strong>"Hello world"<div class="shape">string</div></div>
             <div class="pipe-arrow">──▶</div>
             <div class="pipe-node" style="background:#bae6fd;"><strong>Tokenise</strong>[5024, 995]<div class="shape">$\mathbb{Z}^n$</div></div>
             <div class="pipe-arrow">──▶</div>
-            <div class="pipe-node" style="background:#fecdd3;"><strong>Embed</strong>$E \in \mathbb{R}^{|V|\times 512}$<div class="shape">$\mathbb{R}^{n\times 512}$</div></div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Embed ·√d</strong>$E \in \mathbb{R}^{|V|\times 512}$<div class="shape">$\mathbb{R}^{n\times 512}$</div></div>
             <div class="pipe-arrow">──▶</div>
-            <div class="pipe-node" style="background:#fef08a;"><strong>+ Pos. Enc.</strong>$X = E + PE$<div class="shape">$\mathbb{R}^{n\times 512}$</div></div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>+ Pos. Enc.</strong>$X = E\sqrt{d} + PE$<div class="shape">$\mathbb{R}^{n\times 512}$</div></div>
         </div>
 
-        <h3>Token Embedding</h3>
-        <p>A learned matrix $E \in \mathbb{R}^{|V| \times d}$ maps each token ID to a dense vector. For token index $t$, the embedding is the $t$-th row of $E$ — a lookup, not a computation. The result for $n$ tokens is $X \in \mathbb{R}^{n \times d}$ where each row $x_i \in \mathbb{R}^d$ carries identity but no context.</p>
+        <h3>Token Embedding — Scaled</h3>
+        <p>A learned matrix $E \in \mathbb{R}^{|V| \times d}$ maps each token ID to a dense vector — a lookup, not a computation. §3.4 adds a detail often left out of summaries: the embedding is multiplied by $\sqrt{d_{\text{model}}}$ before it's combined with positional encoding, so the embedding's magnitude is on a comparable scale to the sinusoidal signal:</p>
 
         <div class="math-block">
-            $$x_i = E[\text{token}_i] \in \mathbb{R}^{d_{\text{model}}}$$
+            $$x_i = E[\text{token}_i]\cdot\sqrt{d_{\text{model}}} \in \mathbb{R}^{d_{\text{model}}}$$
             $$X = [x_1;\, x_2;\, \ldots;\, x_n] \in \mathbb{R}^{n \times d_{\text{model}}}$$
         </div>
 
+        <div class="note gray">
+            <span class="note-label">Weight Tying — §3.4</span>
+            This same matrix $E$ is not unique to the encoder. The paper ties it to the decoder's input embedding and to the decoder's pre-softmax output projection — one shared weight matrix used in three places across the whole model.
+        </div>
+
         <h3>Positional Encoding</h3>
-        <p>Self-attention is permutation-equivariant — shuffling input rows shuffles output rows identically. Positional encoding injects a unique signal for each position $i$ using sinusoids of different frequencies:</p>
+        <p>Self-attention is permutation-equivariant — shuffling input rows shuffles output rows identically. §3.5 injects a unique signal per position $i$ using sinusoids of different frequencies, chosen specifically because <em>"for any fixed offset $k$, $PE_{i+k}$ can be represented as a linear function of $PE_i$"</em> — making relative positions easy for the model to learn to attend to:</p>
 
         <div class="math-block">
             $$PE(i,\, 2k) = \sin\!\left(\frac{i}{10000^{2k/d}}\right), \quad PE(i,\, 2k{+}1) = \cos\!\left(\frac{i}{10000^{2k/d}}\right)$$
             $$X_{\text{final}} = X + PE \in \mathbb{R}^{n \times d_{\text{model}}}$$
         </div>
+
+        <p>§5.4 additionally applies dropout ($P_{drop}=0.1$) to this sum before it enters layer 1 — the first of many dropout applications throughout the stack.</p>
 
         <div class="note yellow">
             <span class="note-label">Critical Distinction</span>
@@ -349,7 +171,7 @@
 
         <div class="note pink">
             <span class="note-label">Note</span>
-            Layers share structure but not weights. Each layer $\ell$ has its own independent parameter set $\theta_\ell$. Total encoder parameters $\approx 6 \times$ (per-layer params).
+            Layers share structure but not weights. Each layer $\ell$ has its own independent parameter set $\theta_\ell$. §3.1 fixes $N=6$ for the base and big models alike.
         </div>
 
         <p>The encoder applies $N = 6$ identical-in-structure but independent-in-parameters transformations, each mapping $\mathbb{R}^{n \times d} \to \mathbb{R}^{n \times d}$:</p>
@@ -359,7 +181,7 @@
         </div>
 
         <div class="stack">
-            <div class="stack-row in"><div class="stack-label">INPUT</div><div class="stack-content">X — embeddings + pos. encoding</div><div class="stack-math">$Z^{(0)} \in \mathbb{R}^{n\times 512}$</div></div>
+            <div class="stack-row in"><div class="stack-label">INPUT</div><div class="stack-content">X — scaled embeddings + pos. encoding</div><div class="stack-math">$Z^{(0)} \in \mathbb{R}^{n\times 512}$</div></div>
             <div class="stack-arrow">↓</div>
             <div class="stack-row l"><div class="stack-label">L 1</div><div class="stack-content">local syntax · nearby co-occurrence</div><div class="stack-math">$Z^{(1)} = Z^{(0)} + \delta^{(1)}$</div></div>
             <div class="stack-arrow">↓</div>
@@ -373,7 +195,7 @@
             <div class="stack-arrow">↓</div>
             <div class="stack-row l" style="background:#fff1f2;"><div class="stack-label">L 6</div><div class="stack-content">fully resolved contextual meaning</div><div class="stack-math">$Z^{(6)} = Z^{(5)} + \delta^{(6)}$</div></div>
             <div class="stack-arrow">↓</div>
-            <div class="stack-row out"><div class="stack-label">OUTPUT</div><div class="stack-content">$Z^{(6)}$ — context-aware representations</div><div class="stack-math">$Z^{(6)} \in \mathbb{R}^{n\times 512}$</div></div>
+            <div class="stack-row out"><div class="stack-label">OUTPUT</div><div class="stack-content">$Z^{(6)}$ — passed to every decoder layer as K, V</div><div class="stack-math">$Z^{(6)} \in \mathbb{R}^{n\times 512}$</div></div>
         </div>
 
         <h3>Iterated Refinement</h3>
@@ -388,10 +210,15 @@
         <p class="entry-type">step 03</p>
         <p class="entry-title">Inside One Encoder Layer — Two Sub-layers</p>
 
-        <p>Each layer applies exactly two sub-layers in sequence, each wrapped in a residual connection and Layer Normalization:</p>
+        <p>§3.1: <em>"Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network."</em> Both are wrapped identically:</p>
 
         <div class="math-block">
             $$\text{Output} = \text{LayerNorm}(x + \text{Sublayer}(x))$$
+        </div>
+
+        <div class="note gray">
+            <span class="note-label">Dropout, §5.4</span>
+            Before each residual addition, $\text{Sublayer}(x)$ has dropout applied to its output: $\text{LayerNorm}(x + \text{Dropout}(\text{Sublayer}(x)))$, $P_{drop}=0.1$ for the base model.
         </div>
 
         <div class="two-col">
@@ -419,7 +246,7 @@
         </div>
 
         <h3>Layer Normalisation</h3>
-        <p>LayerNorm normalises across the feature dimension $d$ per token independently — not across batch or sequence. Given $z \in \mathbb{R}^d$:</p>
+        <p>§3.1: all sub-layers, and the embedding layers, produce outputs of dimension $d_{\text{model}}=512$ to make the residual sum well-defined. LayerNorm normalises across the feature dimension $d$ per token independently:</p>
 
         <div class="math-block">
             $$\mu = \frac{1}{d}\sum_j z_j, \quad \sigma^2 = \frac{1}{d}\sum_j (z_j - \mu)^2$$
@@ -428,9 +255,9 @@
 
         <div class="note blue">
             <span class="note-label">Full Layer Forward Pass</span>
-            $A = \text{LayerNorm}(Z^{(\ell-1)} + \text{MHA}(Z^{(\ell-1)}, Z^{(\ell-1)}, Z^{(\ell-1)}))$<br>
-            $Z^{(\ell)} = \text{LayerNorm}(A + \text{FFN}(A))$<br>
-            where $\text{FFN}(x) = \max(0,\, xW_1 + b_1)W_2 + b_2$,&nbsp; $W_1 \in \mathbb{R}^{512\times 2048}$
+            $A = \text{LayerNorm}(Z^{(\ell-1)} + \text{Dropout}(\text{MHA}(Z^{(\ell-1)}, Z^{(\ell-1)}, Z^{(\ell-1)})))$<br>
+            $Z^{(\ell)} = \text{LayerNorm}(A + \text{Dropout}(\text{FFN}(A)))$<br>
+            where $\text{FFN}(x) = \max(0,\, xW_1 + b_1)W_2 + b_2$,&nbsp; $W_1 \in \mathbb{R}^{512\times 2048}$, $W_2 \in \mathbb{R}^{2048\times 512}$
         </div>
     </section>
 
@@ -440,7 +267,7 @@
 
         <div class="note yellow">
             <span class="note-label">Graph Theory</span>
-            Encoder = graph convolution on a fully connected directed graph. Nodes = tokens, edges = $a_{ij}$ weights. Edge weights are data-dependent — the graph rewires per sentence.
+            Encoder self-attention = graph convolution on a fully connected directed graph. Nodes = tokens, edges = $a_{ij}$ weights. Edge weights are data-dependent — the graph rewires per sentence.
         </div>
 
         <p>Define a fully connected directed graph $G = (V, E)$ where $V = \{1,\ldots,n\}$ are token positions. Attention performs a weighted aggregation:</p>
@@ -475,16 +302,22 @@
         <p class="entry-title">Multi-Head Attention — 8 Parallel Representation Subspaces</p>
 
         <div class="note blue">
-            <span class="note-label">Dimensions</span>
-            $d_{\text{model}} = 512$, $h = 8$, $d_k = d_v = 64$. Each head projects into a 64-dim subspace — 8 independent views.
+            <span class="note-label">Dimensions — §3.2.2</span>
+            $d_{\text{model}} = 512$, $h = 8$, $d_k = d_v = d_{\text{model}}/h = 64$. §3.2.1's scaled dot-product attention is run once per head:
         </div>
 
-        <p>Multi-Head Attention runs $h = 8$ independent heads in parallel, each learning to focus on a different relational structure. Roles emerge from training, not assignment.</p>
+        <div class="math-block">
+            $$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V$$
+        </div>
+
+        <p>The $\sqrt{d_k}$ scaling matters: §3.2.1 notes that for large $d_k$, dot products grow large in magnitude, pushing softmax into regions with extremely small gradients — the scale factor counteracts this. Multi-Head Attention then runs $h = 8$ independent heads in parallel, each learning to focus on a different relational structure; roles emerge from training, not assignment:</p>
 
         <div class="math-block">
             $$Q_i = X W^Q_i,\quad K_i = X W^K_i,\quad V_i = X W^V_i \qquad W \in \mathbb{R}^{512\times 64}$$
             $$\text{MHA}(X) = \text{Concat}(\text{head}_1,\ldots,\text{head}_8)\,W^O, \quad W^O \in \mathbb{R}^{512\times 512}$$
         </div>
+
+        <p>§3.2.2: <em>"due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality."</em> Splitting into 8 × 64-dim heads costs about the same as one 512-dim head, while letting the model attend to different representation subspaces simultaneously.</p>
 
         <h3>PyTorch Implementation</h3>
         <pre><code><span class="kw">class</span> <span class="fn">EncoderLayer</span>(nn.Module):
@@ -507,7 +340,7 @@
 
     <section>
         <p class="entry-type">step 06</p>
-        <p class="entry-title">Shape Flow and Encoder Output</p>
+        <p class="entry-title">Shape Flow, Training Regularisation, and Encoder Output</p>
 
         <p>Every transformation preserves tensor dimensions — this enables $N$ identical layers to compose without any adapter between them.</p>
 
@@ -515,8 +348,9 @@
             <thead><tr><th>Stage</th><th>Operation</th><th>Shape</th><th>Notes</th></tr></thead>
             <tbody>
                 <tr><td>Raw token IDs</td><td>Tokenisation</td><td>[n]</td><td>Integer indices</td></tr>
-                <tr><td>Token embeddings</td><td>Row lookup $E[\text{ids}]$</td><td>[n &times; 512]</td><td>$E \in \mathbb{R}^{|V|\times 512}$, learned</td></tr>
+                <tr><td>Token embeddings</td><td>$E[\text{ids}]\cdot\sqrt{512}$</td><td>[n &times; 512]</td><td>$E$ shared with decoder</td></tr>
                 <tr><td>+ Positional enc.</td><td>$X = \text{embed} + PE$</td><td>[n &times; 512]</td><td>Fixed sinusoidal</td></tr>
+                <tr><td>Embedding dropout</td><td>$\text{Dropout}(X)$, $P=0.1$</td><td>[n &times; 512]</td><td>§5.4</td></tr>
                 <tr><td>After MHA (&times;6)</td><td>8 heads &rarr; concat &rarr; $W^O$</td><td>[n &times; 512]</td><td>Each head: [n&times;64]</td></tr>
                 <tr><td>After FFN (&times;6)</td><td>$W_1$&rarr;ReLU&rarr;$W_2$ per position</td><td>[n &times; 512]</td><td>$d_{ff}=2048$ intermediate</td></tr>
                 <tr><td>After LayerNorm (&times;12)</td><td>Normalise over $d$ dim</td><td>[n &times; 512]</td><td>$\gamma, \beta \in \mathbb{R}^{512}$</td></tr>
@@ -529,13 +363,18 @@
             $$Z^{(6)} = f_6 \circ f_5 \circ f_4 \circ f_3 \circ f_2 \circ f_1(X + PE)$$
             $$f_\ell(Z) = \text{LayerNorm}(A + \text{FFN}(A)),\quad A = \text{LayerNorm}(Z + \text{MHA}(Z,Z,Z))$$
         </div>
+
+        <div class="note gray">
+            <span class="note-label">Trained With — §5.4</span>
+            Adam ($\beta_1=0.9,\beta_2=0.98,\epsilon=10^{-9}$), learning rate $d_{\text{model}}^{-0.5}\cdot\min(\text{step}^{-0.5}, \text{step}\cdot 4000^{-1.5})$, residual dropout $P_{drop}=0.1$, label smoothing $\epsilon_{ls}=0.1$ applied at the decoder's output — none of which changes the encoder's computation graph, but all of which shape the encoder's learned weights.
+        </div>
     </section>
 
     <div class="next">
         <div>
             <span class="next-label">Next Section</span>
             <h2>The Decoder</h2>
-            <p>Cross-attention. Causal masking. Autoregressive generation. Q from decoder, K and V from encoder.</p>
+            <p>Cross-attention. Causal masking. Beam search. Q from decoder, K and V from encoder.</p>
         </div>
         <a href="#" class="next-btn">Next &rarr; Decoder</a>
     </div>
