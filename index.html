@@ -27,11 +27,25 @@
 
         /* header */
         .name  { color: #111; font-weight: 400; margin-bottom: 8px; }
-        .bio   { margin-bottom: 40px; }
+        .bio   { margin-bottom: 24px; color: #555; font-size: 12px; }
 
-        .socials { display: flex; gap: 28px; margin-bottom: 56px; }
+        .socials { display: flex; gap: 28px; margin-bottom: 40px; }
         .socials a { border-bottom: 1px solid #aaa; padding-bottom: 2px; transition: color 0.15s; }
         .socials a:hover { color: #000; }
+
+        .about { margin-bottom: 56px; border-top: 1px solid #e8e8e8; padding-top: 24px; }
+        .about p { color: #444; font-size: 12px; margin-bottom: 10px; }
+        .about p:last-child { margin-bottom: 0; }
+
+        .lately { margin-bottom: 56px; }
+        .lately-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 16px; display: block; }
+        .lately ul { list-style: none; padding: 0; margin: 0; }
+        .lately li { font-size: 12px; color: #444; padding: 6px 0; border-bottom: 1px dashed #e8e8e8; }
+        .lately li:last-child { border-bottom: none; }
+        .lately li::before { content: '—'; margin-right: 10px; color: #bbb; }
+
+        .footnote { margin-top: 56px; padding-top: 20px; border-top: 1px solid #e8e8e8; font-size: 11px; color: #888; line-height: 1.7; }
+        .footnote sup { font-size: 9px; margin-right: 6px; color: #aaa; }
 
         /* section */
         section { margin-bottom: 48px; }
@@ -86,12 +100,29 @@
 <div class="wrap">
 
     <p class="name">✦ Yashvi Sharma</p>
-    <p class="bio">final year student and SDE intern. Reading papers, working through the math, building toward research.</p>
+    <p class="bio">Final-year CS undergrad. SDE intern at Nielsen Media. Reading papers, working through the math, building toward research.</p>
 
     <div class="socials">
         <a href="https://github.com/yashvisharma1204">github</a>
         <a href="https://linkedin.com/in/yashvisharma1204">linkedin</a>
+        <a href="mailto:yashvi.sharma1204@gmail.com">email</a>
     </div>
+
+    <div class="about">
+        <p>Python in 9th grade, SQL in 11th.. and I genuinely enjoyed both. First year of CS I was building data science projects and thought that was it, thought I loved data. Then second year hit and I got introduced to ML, and something shifted. Turns out I didn't just love data...I loved understanding what was happening underneath it.</p>
+        <p>That shift changed everything. I started digging into the math (spent two years revising just mathematical concepts..yeah), understanding models, implementing things from scratch using numpy, breaking them, and figuring out why. My days are spent at Nielsen coding backend in Java and Spring Boot. My evenings belong to ML, research papers, and small experiments.</p>
+        <p>I'm actively looking for research fellowships and mentorships where I can contribute to meaningful ML work and grow into someone who understands this field deeply.<sup style="color:#7f7dfc"><a href="#note">[1]</a></sup></p>
+    </div>
+
+    <!-- <div class="lately">
+        <span class="lately-label">⊹ lately</span>
+        <ul>
+            <li>Java Spring Boot microservices and CI/CD pipelines at Nielsen — backend bugs that seem simple until they aren't</li>
+            <li>Learning Deep Learning and NLP — how models actually learn, not just how to run them</li>
+            <li>Solving DSA problems — part discipline, part curiosity, part stubbornness</li>
+            <li>Reading murder mystery books — debugging code and solving fictional crimes feel strangely similar</li>
+        </ul>
+    </div> -->
 
     <section>
         <p class="label">⊹ Paper Breakdown</p>
@@ -121,6 +152,8 @@
             </ul>
         </div>
     </section>
+
+    <p class="footnote" id="note" style="color:#7f7dfc"><sup>[1]</sup> Not just a line on a resume. I want to understand how research actually gets done — the iteration, the dead ends, the slow progress. I want to contribute something real, even if small, and grow into someone who can do it independently one day.</p>
 
 </div>
 </body>
