@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenIE Noise & Hallucination Filtering — Engineering Note</title>
+    <title>OpenIE Triple Extraction — Engineering Note</title>
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -71,46 +75,58 @@
             margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8;
         }
 
+        ul { margin: 0 0 14px 0; padding-left: 20px; color: #333; font-size: 13px; }
+        li { margin-bottom: 10px; }
+        li strong { font-weight: 400; color: #111; }
+
+        em { font-style: italic; }
+
         code {
             font-family: 'Geist Mono', monospace; font-size: 0.9em;
             background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8;
         }
 
+        pre {
+            background: #f5f5f5;
+            color: #111;
+            font-family: 'Geist Mono', monospace;
+            font-size: 11px;
+            line-height: 1.7;
+            padding: 18px 20px;
+            margin: 14px 0;
+            overflow-x: auto;
+            border: 1px solid #111;
+        }
+
+        .math-block {
+            background: #f5f5f5;
+            border-left: 2px solid #111;
+            padding: 14px 18px;
+            margin: 14px 0;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .math-block .katex-display { margin: 0; }
+
         .note {
             border-left: 2px solid #e8e8e8; padding: 10px 16px;
             margin: 14px 0; font-size: 12px; color: #555;
         }
-        .note.yellow { border-color: #111; background: #fef08a; }
-        .note.green  { border-color: #111; background: #bbf7d0; }
-        .note.purple { border-color: #111; background: #fecdd3; }
+        .note.yellow { border-color: #111; background: #fef9c3; }
+        .note.blue   { border-color: #111; background: #eff6ff; }
+        .note.green  { border-color: #111; background: #f0fdf4; }
+        .note.pink   { border-color: #111; background: #fff1f2; }
         .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
 
-        .flow {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr auto 1fr;
-            gap: 10px;
-            align-items: center;
-            margin: 14px 0;
-            padding: 20px;
-            border: 1px dashed #ccc;
-            background: #fafafa;
-        }
-        .flow-node {
-            border: 1px solid #111;
-            padding: 14px;
-            font-size: 11px;
-            text-align: center;
-            line-height: 1.6;
-        }
-        .flow-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 4px; }
-        .flow-node.extraction  { background: #fecdd3; }
-        .flow-node.filter      { background: #bae6fd; }
-        .flow-node.persistence { background: #bbf7d0; }
-        .flow-conn { text-align: center; font-size: 16px; color: #888; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; }
 
         @media (max-width: 600px) {
-            .stats { grid-template-columns: repeat(2,1fr); }
-            .flow { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -124,90 +140,242 @@
 
     <div class="cover">
         <span class="cover-label">Engineering Note — Implementation</span>
-        <h1>OpenIE Noise &amp; Hallucination Filtering</h1>
-        <p class="cover-sub">Threshold-based filtering on SPO triples to prune extraction noise before database persistence</p>
+        <h1>OpenIE Triple Extraction</h1>
+        <p class="cover-sub">From unstructured language to machine-readable (subject, predicate, object) triples — the full pipeline</p>
         <div class="cover-meta">
             <span><strong>Type</strong>Implementation</span>
-            <span><strong>Method</strong>Threshold Gate c ≥ τ</span>
-            <span><strong>Structure</strong>SPO Triples</span>
+            <span><strong>Unit</strong>SPO Triple</span>
+            <span><strong>Extractor</strong>LLM-based</span>
             <span><strong>Target</strong>Neo4j Graph</span>
         </div>
     </div>
 
     <div class="stats">
-        <div class="stat"><span class="stat-n">c ≥ τ</span><span class="stat-l">Threshold Rule</span></div>
-        <div class="stat"><span class="stat-n">SPO</span><span class="stat-l">Triple Structure</span></div>
-        <div class="stat"><span class="stat-n">0%</span><span class="stat-l">Extraction Noise</span></div>
-        <div class="stat"><span class="stat-n">100%</span><span class="stat-l">Graph Integrity</span></div>
+        <div class="stat"><span class="stat-n">SPO</span><span class="stat-l">Atomic Unit</span></div>
+        <div class="stat"><span class="stat-n">7</span><span class="stat-l">Pipeline Steps</span></div>
+        <div class="stat"><span class="stat-n">0.92</span><span class="stat-l">Merge Threshold</span></div>
+        <div class="stat"><span class="stat-n">LLM</span><span class="stat-l">Extraction Method</span></div>
     </div>
 
     <section>
         <p class="entry-type">01</p>
-        <p class="entry-title">What is this?</p>
-        <p>The OpenIE Filtering Pipeline is an automated quality-control gate implemented on parsed Subject → Predicate → Object knowledge triples prior to graph database persistence. Instead of blindly writing every extracted relation into the knowledge store, the ingestion engine evaluates confidence metrics to filter out superficial co-occurrences and model artifacts:</p>
+        <p class="entry-title">What Is Information Extraction and Why Does It Exist</p>
 
-        <div class="flow">
-            <div class="flow-node extraction">
-                <strong>LLM / OpenIE</strong>
-                Extracts raw SPO triples with confidence score <em>c</em>.
-            </div>
-            <div class="flow-conn">→</div>
-            <div class="flow-node filter">
-                <strong>Threshold Gate</strong>
-                Evaluates condition <code>c ≥ τ</code> to prune noise.
-            </div>
-            <div class="flow-conn">→</div>
-            <div class="flow-node persistence">
-                <strong>Neo4j Graph</strong>
-                Persists high-signal, clean semantic relationships.
-            </div>
-        </div>
+        <p>Language is how humans encode knowledge. But language is designed for humans — it's ambiguous, context-dependent, redundant, and structurally inconsistent. The sentence "Einstein developed the theory of relativity while working in Bern" contains three distinct facts, expressed as a single clause with implicit relationships, temporal context, and a subordinate phrase. A database cannot store that sentence as a queryable fact. A vector index can find it by similarity but cannot reason about its internal structure.</p>
+
+        <p>Information Extraction is the field that bridges this gap. It takes unstructured natural language text and converts it into structured, machine-readable representations. OpenIE — Open Information Extraction — is a specific branch with one defining characteristic: it operates without a predefined schema.</p>
+
+        <p>Traditional information extraction systems were closed. You defined the relationship types you cared about upfront and the system looked for those specific patterns. OpenIE flips this — it extracts whatever relationships are present in the text, without being told what to look for. The output is a set of triples in the form (subject, predicate, object), and the predicate can be anything the text expresses.</p>
     </section>
 
     <section>
         <p class="entry-type">02</p>
-        <p class="entry-title">Why we did that?</p>
-        <p>LLMs and traditional OpenIE extractors are inherently susceptible to generation noise, resulting in severe data quality hurdles during automated knowledge graph construction:</p>
+        <p class="entry-title">The Triple as the Atomic Unit of Knowledge</p>
 
-        <div class="note yellow">
-            <span class="note-label">Problem 1 — Spurious Co-occurrences</span>
-            Unchecked extractors frequently generate vague or generic relational links (e.g. <code>paper → related_to → method</code>) that add zero structural value to multi-hop reasoning.
+        <p>A triple is the minimal representation of a binary relationship between two entities:</p>
+
+        <div class="math-block">
+            $$\mathcal{T} = (s, p, o) \mid s \in \mathcal{E},\ o \in \mathcal{E},\ p \in \mathcal{R}$$
         </div>
 
-        <div class="note yellow">
-            <span class="note-label">Problem 2 — Hallucinated Entities</span>
-            Sub-optimal prompt parsing or low-probability token outputs can introduce fictitious parameter dimensions or non-existent benchmark datasets into the graph.
-        </div>
+        <p>Where $\mathcal{E}$ is the set of all entities and $\mathcal{R}$ is the set of all predicates. Take this sentence from a machine learning paper: <em>"DistilBERT uses knowledge distillation to compress BERT while retaining 97% of its language understanding capabilities."</em></p>
 
-        <div class="note yellow">
-            <span class="note-label">Problem 3 — Graph Pollution</span>
-            Unfiltered persistence bloats the Neo4j schema with redundant or low-confidence edges, degrading downstream RAG context quality and increasing token overhead.
-        </div>
+        <p>A well-functioning OpenIE system should extract:</p>
+
+        <table>
+            <thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>
+            <tbody>
+                <tr><td>DistilBERT</td><td>uses</td><td>knowledge distillation</td></tr>
+                <tr><td>DistilBERT</td><td>compresses</td><td>BERT</td></tr>
+                <tr><td>DistilBERT</td><td>retains</td><td>97% of language understanding capabilities</td></tr>
+                <tr><td>knowledge distillation</td><td>applied to compress</td><td>BERT</td></tr>
+            </tbody>
+        </table>
+
+        <p>Each triple is an atomic, independently queryable fact. You can store them separately, merge them with triples from other documents, and traverse the relationships between them — none of which is possible with the original sentence.</p>
     </section>
 
     <section>
         <p class="entry-type">03</p>
-        <p class="entry-title">What was the result?</p>
-        <p>Enforcing strict threshold-based filtering yielded immediate improvements across the entire data ingestion and retrieval workflow:</p>
+        <p class="entry-title">The Linguistic Pipeline — How Classical OpenIE Works</p>
+
+        <p>Before LLMs, OpenIE systems were built on explicit linguistic analysis. Understanding this pipeline matters because it explains both why the problem is hard and why LLM-based extraction is such a significant improvement.</p>
+
+        <h3>Step 1 — Tokenization and Sentence Splitting</h3>
+        <p>Raw text is first split into sentences, then into tokens. This sounds trivial but isn't. Abbreviations, decimal numbers, and domain-specific notation all create edge cases. "Dr. Smith published in vol. 3, p. 14." contains one sentence, not three — but a naive period-splitter gets it wrong.</p>
+
+        <h3>Step 2 — Part-of-Speech Tagging</h3>
+        <p>Every token is assigned a grammatical role: noun, verb, adjective, preposition, and so on. "Model" as a noun is an entity. "Model" as a verb is a predicate. The POS tagger resolves this ambiguity using context.</p>
+
+        <h3>Step 3 — Dependency Parsing</h3>
+        <p>A dependency parser builds a tree structure over the sentence that captures the grammatical relationships between words:</p>
+        <pre>uses
+├── subject: DistilBERT (nsubj)
+├── object: distillation (dobj)
+│   └── compound: knowledge (compound)
+└── purpose: compress (advcl)
+    └── object: BERT (dobj)</pre>
+
+        <h3>Step 4 — Named Entity Recognition</h3>
+        <p>NER identifies spans of text that refer to real-world entities and classifies them by type. In scientific text, this means recognizing that "DistilBERT" is a Model, "knowledge distillation" is a Method, and "BERT" is another Model. This is where domain adaptation matters enormously — general-purpose NER models trained on news corpora will completely miss "IVF-PQ indexing", "BLEU score", and "multi-head self-attention" as meaningful entities.</p>
+
+        <h3>Step 5 — Coreference Resolution</h3>
+        <p>One of the hardest problems in NLP. Consider: <em>"The transformer architecture was introduced by Vaswani et al. It replaced recurrent networks entirely."</em> Without coreference resolution, "It" becomes a broken subject. With it, all pronouns resolve to their antecedent and you get clean triples throughout.</p>
+
+        <h3>Step 6 — Triple Candidate Generation</h3>
+        <p>Using the dependency parse, the system generates candidate triples by identifying subject-verb-object patterns. Some systems use hand-crafted extraction patterns; others use learned classifiers. Hand-crafted systems are more interpretable but brittle. Learned systems generalize better but require large amounts of labeled training data.</p>
+
+        <h3>Step 7 — Confidence Scoring</h3>
+        <p>Not all extracted triples are equally reliable. Classical systems assign confidence scores based on parse tree depth, NER confidence, predicate clarity, and whether coreference resolution was required. Triples below a threshold $c < \tau$ are dropped before storage.</p>
+    </section>
+
+    <section>
+        <p class="entry-type">04</p>
+        <p class="entry-title">Why LLM-Based Extraction Changes Everything</p>
+
+        <p>Classical OpenIE pipelines are a chain of models, each of which can fail and propagate errors downstream. A bad POS tag corrupts the dependency parse. A bad dependency parse corrupts the triple candidates. The error compounds at each step.</p>
+
+        <p>LLM-based extraction collapses this entire pipeline into a single step:</p>
+
+        <pre>Extract all (subject, predicate, object) triples from the following text.
+For each triple, assign a confidence score from 0.0 to 1.0.
+Normalize entity names to canonical forms.
+Output as JSON.
+
+Text: {document_text}</pre>
+
+        <p>The LLM handles tokenization, parsing, NER, coreference resolution, and triple generation simultaneously. This is what this project uses — <code>TRIPLE_EXTRACTION_METHOD=llm</code> in the config.</p>
 
         <div class="note green">
-            <span class="note-label">OpenIE Noise Eliminated</span>
-            Threshold-based filtering (<code>c ≥ τ</code>) on parsed SPO triples prunes extraction noise and hallucinations prior to database persistence.
+            <span class="note-label">Advantage 1 — Implicit Coreference</span>
+            LLMs resolve pronouns and nominal references naturally because they process the entire passage with full context, not sentence by sentence.
         </div>
 
         <div class="note green">
-            <span class="note-label">Higher Semantic Density</span>
-            Only high-confidence edges enter the graph topology, ensuring multi-hop Cypher traversals remain precise and contextually relevant.
+            <span class="note-label">Advantage 2 — Domain Knowledge</span>
+            A general-purpose LLM already knows that "DistilBERT" is a model, "knowledge distillation" is a method, and "BLEU" is a metric — without domain-specific NER fine-tuning.
         </div>
 
         <div class="note green">
-            <span class="note-label">Optimised Storage Efficiency</span>
-            Drastically reduced database write operations for redundant or junk triples, keeping the Neo4j memory footprint lean.
+            <span class="note-label">Advantage 3 — Predicate Normalization</span>
+            You can instruct the LLM to normalize predicates to canonical verb forms: "uses", "utilizes", "employs", and "applies" all become USES_METHOD. Classical systems produce whatever verb phrase appears in the text.
         </div>
 
         <div class="note green">
-            <span class="note-label">Deterministic RAG Reliability</span>
-            Eliminated garbage-in-out failure modes, allowing Gemini 2.0 Flash to operate strictly over verified, clean knowledge paths.
+            <span class="note-label">Advantage 4 — Implicit Relationships</span>
+            "DistilBERT is a compressed version of BERT" implies <code>DistilBERT DERIVED_FROM BERT</code> even though "derived from" doesn't appear in the text. LLMs can extract these. Classical pattern-matching systems cannot.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">05</p>
+        <p class="entry-title">Entity Disambiguation — The Deduplication Problem</p>
+
+        <p>Extraction produces raw entity strings. Raw entity strings are messy. The same real-world entity appears under dozens of surface forms across a corpus:</p>
+
+        <ul>
+            <li>"LLM", "LLMs", "large language model", "Large Language Models", "large language models (LLMs)"</li>
+            <li>"BERT", "Bidirectional Encoder Representations from Transformers", "bert-base"</li>
+            <li>"GPT-3", "GPT3", "the GPT-3 model", "OpenAI's GPT-3"</li>
+        </ul>
+
+        <p>If each surface form becomes a separate node, the graph fragments. You end up with 6 disconnected nodes for what should be a single concept, and none of them accumulate enough edges to be useful for traversal.</p>
+
+        <p>This project uses fuzzy string matching with a configurable threshold (<code>ENTITY_MERGE_THRESHOLD=0.92</code>). Before inserting a new entity, the system checks whether a sufficiently similar entity already exists. If the similarity exceeds the threshold, the new mention is merged into the existing node.</p>
+
+        <div class="note yellow">
+            <span class="note-label">The Threshold Tradeoff</span>
+            Set it too high (0.99) and you get fragmentation — "BERT" and "bert-base" become separate nodes. Set it too low (0.70) and you get false merges — "GPT-2" and "GPT-3" get collapsed into the same node, which corrupts the graph.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">06</p>
+        <p class="entry-title">Predicate Normalization and High-Signal Verbs</p>
+
+        <p>Raw predicates extracted from scientific text are extremely diverse. A single semantic relationship — "this method improves this metric" — might be expressed as "improves", "enhances", "boosts", "increases", "achieves better results on", "outperforms baselines on". For graph traversal to work, these need to be normalized to a consistent predicate vocabulary.</p>
+
+        <p>This project defines a set of high-signal predicates with associated traversal weights:</p>
+
+        <pre>HIGH_SIGNAL_PREDICATES = {
+    "replaces_component_with":        1.0,
+    "introduces_training_objective":  0.95,
+    "ameliorates_limitation_of":      0.90,
+    "benchmarked_superior_to":        0.85,
+    "proposes":                       0.80,
+    "uses_dataset":                   0.60,
+    "achieves_score_on":              0.60,
+    "related_to":                     0.30,
+}</pre>
+
+        <p>The weights reflect semantic specificity. A <code>replaces_component_with</code> relationship is highly informative. A <code>related_to</code> relationship tells you almost nothing beyond co-occurrence. During graph traversal, high-weight predicates are prioritized so the retrieval system follows the most semantically meaningful paths first.</p>
+    </section>
+
+    <section>
+        <p class="entry-type">07</p>
+        <p class="entry-title">From Triples to Graph — The Idempotent Merge</p>
+
+        <p>Once triples are extracted, normalized, and scored, they need to be inserted into the knowledge graph without creating duplicates. This is handled by idempotent Cypher <code>MERGE</code> operations:</p>
+
+        <pre>UNWIND $triples AS triple
+MERGE (s:Entity {name: triple.subject})
+  ON CREATE SET s.type = triple.subject_type, s.mention_count = 1
+  ON MATCH SET s.mention_count = s.mention_count + 1
+
+MERGE (o:Entity {name: triple.object})
+  ON CREATE SET o.type = triple.object_type, o.mention_count = 1
+  ON MATCH SET o.mention_count = o.mention_count + 1
+
+MERGE (s)-[r:RELATION {type: triple.predicate}]->(o)
+  ON CREATE SET r.confidence = triple.confidence, r.sources = [triple.source_id]
+  ON MATCH SET r.sources = r.sources + triple.source_id</pre>
+
+        <div class="note blue">
+            <span class="note-label">MERGE vs INSERT</span>
+            MERGE says: find this pattern if it exists, create it if it doesn't. A new entity gets <code>mention_count = 1</code>. An existing entity gets its count incremented. A new relationship gets its confidence and source stored. An existing relationship gets the new source appended. The graph evolves continuously — not a snapshot, a living structure.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">08</p>
+        <p class="entry-title">What Good Extraction Looks Like vs What Bad Extraction Looks Like</p>
+
+        <p>Good extraction from <em>"BERT uses a masked language modeling objective and is pre-trained on BooksCorpus and English Wikipedia"</em>:</p>
+
+        <table>
+            <thead><tr><th>Triple</th><th>Confidence</th></tr></thead>
+            <tbody>
+                <tr><td>(BERT, uses, masked language modeling objective)</td><td>0.95</td></tr>
+                <tr><td>(BERT, pre-trained on, BooksCorpus)</td><td>0.92</td></tr>
+                <tr><td>(BERT, pre-trained on, English Wikipedia)</td><td>0.92</td></tr>
+            </tbody>
+        </table>
+
+        <p>Bad extraction from the same sentence:</p>
+
+        <table>
+            <thead><tr><th>Triple</th><th>Problem</th></tr></thead>
+            <tbody>
+                <tr><td>(BERT, uses a masked language modeling objective and is pre-trained on, BooksCorpus and English Wikipedia)</td><td>predicate swallowed the object; conjunction should be two triples</td></tr>
+                <tr><td>(it, uses, objective)</td><td>pronoun not resolved; predicate truncated; object too vague</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note pink">
+            <span class="note-label">Bad Triples Actively Corrupt the Graph</span>
+            A node called "it" with high <code>mention_count</code> because pronouns weren't resolved is noise that pollutes every query touching those edges. This is why confidence threshold filtering exists, and why the extraction step is the most critical component in the entire pipeline.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">09</p>
+        <p class="entry-title">The Bigger Picture</p>
+
+        <p>Triple extraction is the point where unstructured language becomes structured knowledge. Everything downstream — graph traversal, multi-hop reasoning, provenance tracking, entity-level summarization — depends entirely on the quality of what happens at this step.</p>
+
+        <div class="note green">
+            <span class="note-label">Why LLM Extraction Earns Its Place</span>
+            Scientific text is dense, technical, and full of implicit relationships that classical pattern-matching systems miss entirely. An LLM that already understands the domain can extract (DistilBERT, DERIVED_FROM, BERT) and (DistilBERT, OPTIMIZED_FOR, inference efficiency) from a sentence that contains neither "derived from" nor "optimized for" as explicit verb phrases. That gap between what's written and what's meant is where classical extraction fails.
         </div>
     </section>
 
