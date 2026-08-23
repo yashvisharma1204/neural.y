@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graphs 101 — Engineering Note</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #f9f9f9;
+            color: #111;
+            font-family: 'Geist Mono', monospace;
+            font-size: 13px;
+            font-weight: 300;
+            line-height: 1.8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 60px 24px 80px;
+        }
+
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 56px;
+            font-size: 11px;
+            color: #888;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta {
+            display: flex; gap: 28px; flex-wrap: wrap;
+            font-size: 11px; color: #888;
+            padding-top: 16px; border-top: 1px solid #e8e8e8;
+        }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 22px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #fef08a; }
+        .stat:nth-child(2) { background: #bae6fd; }
+        .stat:nth-child(3) { background: #fecdd3; }
+        .stat:nth-child(4) { background: #bbf7d0; }
+
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+
+        h3 {
+            font-size: 10px; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.18em; color: #888;
+            margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8;
+        }
+
+        ul { margin: 0 0 14px 0; padding-left: 20px; color: #333; font-size: 13px; }
+        li { margin-bottom: 10px; }
+        li strong { font-weight: 400; color: #111; }
+
+        em { font-style: italic; }
+
+        code {
+            font-family: 'Geist Mono', monospace; font-size: 0.9em;
+            background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8;
+        }
+
+        pre {
+            background: #f5f5f5;
+            color: #111;
+            font-family: 'Geist Mono', monospace;
+            font-size: 11px;
+            line-height: 1.7;
+            padding: 18px 20px;
+            margin: 14px 0;
+            overflow-x: auto;
+            border: 1px solid #111;
+        }
+        pre .c { color: #888; }
+
+        .note {
+            border-left: 2px solid #e8e8e8; padding: 10px 16px;
+            margin: 14px 0; font-size: 12px; color: #555;
+        }
+        .note.yellow { border-color: #111; background: #fef9c3; }
+        .note.blue   { border-color: #111; background: #eff6ff; }
+        .note.green  { border-color: #111; background: #f0fdf4; }
+        .note.pink   { border-color: #111; background: #fff1f2; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+
+        .triple {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin: 6px 0;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+        .triple-node {
+            border: 1px solid #111;
+            padding: 5px 12px;
+            background: white;
+        }
+        .triple-node.subj { background: #bae6fd; }
+        .triple-node.pred { background: #fef08a; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .triple-node.obj  { background: #bbf7d0; }
+        .triple-arrow { padding: 0 6px; color: #888; font-size: 11px; }
+
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Project — Research Agent</span>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Engineering Note — Foundations</span>
+        <h1>Knowledge Graphs 101</h1>
+        <p class="cover-sub">What they are, how they work, and why they complement neural models</p>
+        <div class="cover-meta">
+            <span><strong>Type</strong>Foundations</span>
+            <span><strong>Store</strong>Neo4j</span>
+            <span><strong>Unit</strong>Subject → Predicate → Object</span>
+            <span><strong>Pattern</strong>Property Graph</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">SPO</span><span class="stat-l">Atomic Unit</span></div>
+        <div class="stat"><span class="stat-n">n-hop</span><span class="stat-l">Reasoning</span></div>
+        <div class="stat"><span class="stat-n">100%</span><span class="stat-l">Provenance</span></div>
+        <div class="stat"><span class="stat-n">0</span><span class="stat-l">Ambiguity</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">01</p>
+        <p class="entry-title">What Even Is a Knowledge Graph?</p>
+
+        <p>At its core, a knowledge graph is a way to store facts. Not documents, not rows in a table — facts. Specifically, facts in the form of relationships between things.</p>
+
+        <p>The classic example: instead of storing "Albert Einstein was a physicist born in Germany who developed the theory of relativity" as a blob of text, a knowledge graph breaks that down into atomic, machine-readable facts:</p>
+
+        <div style="margin: 14px 0; display: flex; flex-direction: column; gap: 6px;">
+            <div class="triple">
+                <div class="triple-node subj">Einstein</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node pred">BORN_IN</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node obj">Germany</div>
+            </div>
+            <div class="triple">
+                <div class="triple-node subj">Einstein</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node pred">DEVELOPED</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node obj">Theory of Relativity</div>
+            </div>
+            <div class="triple">
+                <div class="triple-node subj">Einstein</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node pred">IS_A</div>
+                <div class="triple-arrow">──▶</div>
+                <div class="triple-node obj">Physicist</div>
+            </div>
+        </div>
+
+        <p>Each of those is a triple. Subject, predicate, object. That's the fundamental unit of a knowledge graph.</p>
+    </section>
+
+    <section>
+        <p class="entry-type">02</p>
+        <p class="entry-title">Nodes</p>
+
+        <p>Nodes represent entities — things that exist in your domain. In a scientific research graph like this project, nodes are things like:</p>
+
+        <ul>
+            <li>A paper ("Attention Is All You Need")</li>
+            <li>A model ("DistilBERT")</li>
+            <li>A method ("Knowledge Distillation")</li>
+            <li>A metric ("BLEU Score")</li>
+            <li>An author ("Yann LeCun")</li>
+        </ul>
+
+        <p>Each node has a type (also called a label) that tells you what kind of thing it is. And each node carries properties — key-value pairs that describe it further. A Paper node might have properties like <code>title</code>, <code>abstract</code>, <code>published_date</code>, <code>mention_count</code>. A Model node might have <code>architecture</code>, <code>parameter_count</code>, <code>summary</code>.</p>
+
+        <div class="note yellow">
+            <span class="note-label">Why Types Matter</span>
+            The type system is what makes a knowledge graph an actual knowledge graph rather than just a graph. It encodes ontological meaning — the difference between a Method and a Model matters when you're trying to answer "what methods does DistilBERT use?" versus "what models use knowledge distillation?".
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">03</p>
+        <p class="entry-title">Edges</p>
+
+        <p>Edges are the relationships between nodes. This is where knowledge graphs become genuinely powerful and where they diverge completely from relational databases or vector stores.</p>
+
+        <p>An edge connects two nodes and carries a predicate — a verb phrase that describes the nature of the relationship:</p>
+
+        <pre>(:Model {name: "DistilBERT"}) -[:USES_METHOD]-> (:Method {name: "Knowledge Distillation"})
+(:Method {name: "Knowledge Distillation"}) -[:IMPROVES]-> (:Metric {name: "Inference Latency"})
+(:Paper {name: "DistilBERT Paper"}) -[:INTRODUCES]-> (:Model {name: "DistilBERT"})</pre>
+
+        <p>Edges are directed — the direction carries meaning. "DistilBERT uses Knowledge Distillation" is not the same as "Knowledge Distillation uses DistilBERT."</p>
+
+        <p>Edges also carry their own properties. In this project, every edge stores:</p>
+
+        <ul>
+            <li><strong>confidence</strong> — how certain the extraction model was about this relationship (0.0 to 1.0)</li>
+            <li><strong>sources</strong> — which paper IDs this relationship was extracted from (provenance)</li>
+        </ul>
+
+        <div class="note pink">
+            <span class="note-label">Why Confidence Matters</span>
+            A relationship extracted with 0.95 confidence from three separate papers is fundamentally different from one extracted with 0.4 confidence from a single ambiguous sentence.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">04</p>
+        <p class="entry-title">Properties</p>
+
+        <p>Properties are what separate a knowledge graph from a plain graph. A plain graph is just nodes and edges — topology only. A property graph (which is what Neo4j implements) lets every node and every edge carry arbitrary key-value metadata.</p>
+
+        <p>This matters because real-world knowledge isn't binary. It's not just "these two things are related" — it's "these two things are related, with this level of certainty, first observed on this date, mentioned in these 14 papers, and the relationship is of this specific semantic type."</p>
+
+        <pre>Node properties:   name, type, mention_count, text, summary, created_at
+Edge properties:   type, confidence, sources</pre>
+
+        <div class="note blue">
+            <span class="note-label">mention_count</span>
+            The <code>mention_count</code> on nodes is a signal of how central a concept is to the corpus. A method mentioned across 40 papers is structurally more important than one mentioned in 2. This gets used directly in the frontend to scale node sizes in the D3 visualization.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">05</p>
+        <p class="entry-title">Multi-hop Reasoning — The Killer Feature</p>
+
+        <p>Here's where knowledge graphs do something vector search fundamentally cannot.</p>
+
+        <p>Say you ask: "What metrics improved as a result of applying quantization to transformer models?" A vector search will find chunks of text that are semantically similar to that question. But it cannot traverse the chain:</p>
+
+        <pre>Quantization → APPLIED_TO → Transformer
+Transformer  → BENCHMARKED_ON → GLUE Score
+Quantization → IMPROVES → Inference Latency</pre>
+
+        <p>A knowledge graph can execute this as a Cypher path query:</p>
+
+        <pre>MATCH (m:Method {name: "Quantization"})-[:APPLIED_TO]->(model:Model)
+      -[:BENCHMARKED_ON]->(metric:Metric)
+RETURN metric.name</pre>
+
+        <div class="note green">
+            <span class="note-label">Deterministic vs Approximate</span>
+            This is deterministic, structured reasoning over explicit relationships. The answer isn't approximated from semantic similarity — it's computed by traversing a graph of facts. This is what "multi-hop reasoning" means: following a chain of relationships across multiple nodes to arrive at an answer that no single document chunk contains.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">06</p>
+        <p class="entry-title">Why They Complement Neural Models</p>
+
+        <p>Neural models — transformers, embedding models, LLMs — are extraordinarily good at understanding language. They can handle paraphrase, ambiguity, and context. But they have structural weaknesses:</p>
+
+        <div class="note pink">
+            <span class="note-label">Weakness 1 — Counting & Enumeration</span>
+            Ask an LLM "how many papers in this corpus use attention mechanisms?" and it will hallucinate a number. Ask a knowledge graph and it runs <code>MATCH (p:Paper)-[:USES_METHOD]->(:Method {name: "Attention"}) RETURN count(p)</code> and gives you an exact answer.
+        </div>
+
+        <div class="note pink">
+            <span class="note-label">Weakness 2 — Provenance</span>
+            When an LLM tells you something, you can't easily ask "which document did that come from?" A knowledge graph stores <code>sources</code> on every edge — every fact is traceable back to its origin.
+        </div>
+
+        <div class="note pink">
+            <span class="note-label">Weakness 3 — Relational Queries</span>
+            "What is the relationship between X and Y?" is hard for vector search because the relationship isn't in any single chunk — it's implicit across multiple documents. A knowledge graph makes it explicit and queryable.
+        </div>
+
+        <div class="note pink">
+            <span class="note-label">Weakness 4 — Incremental Updates</span>
+            Adding a new paper to a FAISS index is straightforward, but the semantic relationships between the new paper and existing knowledge aren't captured. A knowledge graph can <code>MERGE</code> new nodes and edges idempotently — existing relationships are preserved, new ones are added, and <code>mention_count</code> is incremented automatically.
+        </div>
+
+        <p>Conversely, knowledge graphs are bad at what neural models are good at. They can't handle fuzzy matching, paraphrase, or unstructured queries. They require structured, normalized data. They break on ambiguity.</p>
+
+        <div class="note green">
+            <span class="note-label">The Hybrid Justification</span>
+            The hybrid architecture in this project exists precisely because of this complementarity. FAISS handles the fuzzy, semantic, "find me things related to this concept" retrieval. Neo4j handles the precise, structural, "trace the exact path between these entities" reasoning. Gemini then synthesizes both into a coherent answer. Neither alone is sufficient. Together, they cover each other's blind spots.
+        </div>
+    </section>
+
+</div>
+</body>
+</html>
