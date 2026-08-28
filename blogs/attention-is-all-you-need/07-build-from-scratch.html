@@ -3,98 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Build: The Transformer From Scratch — Attention Is All You Need</title>
+        <title>Build: The Transformer From Scratch — Attention Is All You Need</title>
+    <meta name="description" content="Build: The Transformer From Scratch — neural.y research notes by Yashvi Sharma.">
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <!-- social cards -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="neural.y">
+    <meta property="og:title" content="Build: The Transformer From Scratch — Attention Is All You Need">
+    <meta property="og:description" content="Build: The Transformer From Scratch — neural.y research notes.">
+    <meta property="og:url" content="https://yashvisharma1204.github.io/neural.y/blogs/attention-is-all-you-need/07-build-from-scratch.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Build: The Transformer From Scratch — Attention Is All You Need">
+    <meta name="twitter:description" content="Build: The Transformer From Scratch — neural.y research notes.">
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
         onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
-            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
-            display: flex; justify-content: center; padding: 60px 24px 80px;
-        }
-        .wrap { width: 100%; max-width: 660px; }
-        a { color: inherit; text-decoration: none; }
-        nav {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
-            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
-        }
-        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
-        nav a:hover { color: #111; }
-        .cover { margin-bottom: 56px; }
-        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
-        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
-        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
-        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
-        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
-        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
-        .stat:last-child { border-right: none; }
-        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
-        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
-        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
-        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
-        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
-        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
-        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
-        p { margin-bottom: 14px; color: #333; font-size: 13px; }
-        p:last-child { margin-bottom: 0; }
-        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
-        em { font-style: italic; } strong { font-weight: 400; color: #111; }
-        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
-        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
-        .math-block .katex-display { margin: 0; }
-        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
-        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
-        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
-        .note.gray { border-color: #111; background: #f3f4f6; }
-        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
-        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
-        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
-        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
-        .pipe-node .shape { font-size: 10px; color: #888; }
-        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
-        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
-        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
-        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
-        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
-        .card-body { padding: 12px; line-height: 1.7; }
-        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
-        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
-        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; } pre .s { color: #dc2626; }
-        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
-        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
-        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
-        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
-        .verify { border: 1px solid #111; margin: 14px 0; font-size: 11px; }
-        .verify-row { display: flex; align-items: center; padding: 6px 12px; border-bottom: 1px solid #e8e8e8; gap: 10px; }
-        .verify-row:last-child { border-bottom: none; }
-        .verify-row:nth-child(even) { background: #fafafa; }
-        .badge { background: #16a34a; color: white; font-size: 9px; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 2px; flex-shrink: 0; }
-        .out-table td { font-size: 11px; }
-        .out-ok { color: #16a34a; } .out-bad { color: #dc2626; }
-        .curve { width: 100%; border: 1px solid #111; margin: 14px 0; display: block; }
-        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
-        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
-        .next p { color: #888; font-size: 12px; margin: 0; }
-        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
-        .next-btn:hover { background: white; border-color: white; }
-        @media (max-width: 600px) {
-            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
-            h1 { font-size: 17px; } .next { flex-direction: column; }
-        }
-    </style>
+    <link rel="stylesheet" href="../style.css">
+    <script defer src="../blog.js"></script>
 </head>
 <body>
+<div id="progress"></div>
+<nav id="toc"></nav>
 <div class="wrap">
 
     <nav>
         <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode">◐ theme</button>
         <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer">source on github ↗</a>
     </nav>
 
@@ -240,7 +176,7 @@
             $$lr = d_{\text{model}}^{-0.5} \cdot \min\!\left(step^{-0.5},\ step \cdot warmup^{-1.5}\right)$$
         </div>
 
-        <img class="curve" src="assets/date_transformer_loss.png" alt="Training loss curve with warmup learning-rate schedule">
+        <img class="curve" src="../assets/date_transformer_loss.png" alt="Training loss curve with warmup learning-rate schedule">
         <p style="text-align:center;color:#888;font-size:10px;margin-top:-6px;">Real run. Blue = cross-entropy loss (47 → &lt;1). Orange dashed = the §5.3 warmup LR, peaking at ~4.4e-3 at step 800 then decaying.</p>
 
         <div class="note yellow">
@@ -296,7 +232,7 @@
         <h3>Seeing the Reordering — Cross-Attention Heatmap</h3>
         <p>This isn't just a claim. Extracting the last decoder layer's cross-attention weights (head-averaged) while it generates <code>2012-08-05</code> from <code>05/08/2012</code> shows the reordering directly — each output character attends back to the exact source character it's copying:</p>
 
-        <img class="curve" src="assets/date_cross_attention.png" alt="Cross-attention heatmap showing output characters attending to source characters">
+        <img class="curve" src="../assets/date_cross_attention.png" alt="Cross-attention heatmap showing output characters attending to source characters">
         <p style="text-align:center;color:#888;font-size:10px;margin-top:-6px;">Real attention weights from the trained model. Rows = generated output (top→bottom), columns = source. Note the <strong>staircase</strong>: the year <code>2012</code> (top rows) attends to the source's <em>right</em> end, the day <code>05</code> (bottom rows) attends to the source's <em>left</em> end — the D/M/Y → Y-M-D reversal, made visible.</p>
 
         <div class="note green">

@@ -4,13 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>neural.y</title>
+    <meta name="description" content="neural.y — neural networks with Yashvi Sharma. Paper breakdowns, from-scratch implementations, and research notes.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="neural.y">
+    <meta property="og:title" content="neural.y — neural networks with yashvi">
+    <meta property="og:description" content="Paper breakdowns, from-scratch implementations, and research notes.">
+    <meta property="og:url" content="https://yashvisharma1204.github.io/neural.y/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="neural.y">
+    <meta name="twitter:description" content="Paper breakdowns, from-scratch implementations, and research notes.">
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #f9f9f9; --ink: #111; --muted: #555; --muted2: #888; --about: #444;
+            --hair: #e8e8e8; --hair2: #aaa; --dash: #e8e8e8; --bullet: #bbb;
+            --blue: #7dd3fc; --peach: #fda4af; --green: #86efac; --t: 0.15s;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0f; --ink: #f4f4f5; --muted: #b6b6bd; --muted2: #8a8a92; --about: #cdcdd2;
+                --hair: #2a2a2e; --hair2: #444; --dash: #2a2a2e; --bullet: #444;
+                --blue: #38bdf8; --peach: #fb7185; --green: #4ade80;
+            }
+        }
+        :root[data-theme="dark"] {
+            --bg: #0e0e0f; --ink: #f4f4f5; --muted: #b6b6bd; --muted2: #8a8a92; --about: #cdcdd2;
+            --hair: #2a2a2e; --hair2: #444; --dash: #2a2a2e; --bullet: #444;
+            --blue: #38bdf8; --peach: #fb7185; --green: #4ade80;
+        }
+        :root[data-theme="light"] {
+            --bg: #f9f9f9; --ink: #111; --muted: #555; --muted2: #888; --about: #444;
+            --hair: #e8e8e8; --hair2: #aaa; --dash: #e8e8e8; --bullet: #bbb;
+            --blue: #7dd3fc; --peach: #fda4af; --green: #86efac;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: #f9f9f9;
-            color: #111;
+            background: var(--bg);
+            color: var(--ink);
             font-family: 'Geist Mono', monospace;
             font-size: 13px;
             font-weight: 300;
@@ -19,57 +52,68 @@
             display: flex;
             justify-content: center;
             padding: 60px 24px 80px;
+            transition: background var(--t), color var(--t);
         }
 
         .wrap { width: 100%; max-width: 660px; }
 
         a { color: inherit; text-decoration: none; }
 
+        /* theme toggle */
+        .topbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .theme-toggle { background: none; border: 1px solid var(--hair); color: var(--muted2); font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; cursor: pointer; transition: color var(--t), border-color var(--t); }
+        .theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+
         /* header */
-        .name  { color: #111; font-weight: 400; margin-bottom: 8px; }
-        .bio   { margin-bottom: 24px; color: #555; font-size: 12px; }
+        .name  { color: var(--ink); font-weight: 400; margin-bottom: 8px; }
+        .bio   { margin-bottom: 24px; color: var(--muted); font-size: 12px; }
 
         .socials { display: flex; gap: 28px; margin-bottom: 40px; }
-        .socials a { border-bottom: 1px solid #aaa; padding-bottom: 2px; transition: color 0.15s; }
-        .socials a:hover { color: #000; }
+        .socials a { border-bottom: 1px solid var(--hair2); padding-bottom: 2px; transition: color 0.15s; }
+        .socials a:hover { color: var(--ink); }
 
-        .about { margin-bottom: 56px; border-top: 1px solid #e8e8e8; padding-top: 24px; }
-        .about p { color: #444; font-size: 12px; margin-bottom: 10px; }
+        .about { margin-bottom: 56px; border-top: 1px solid var(--hair); padding-top: 24px; }
+        .about p { color: var(--about); font-size: 12px; margin-bottom: 10px; }
         .about p:last-child { margin-bottom: 0; }
 
         .lately { margin-bottom: 56px; }
-        .lately-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 16px; display: block; }
+        .lately-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2); margin-bottom: 16px; display: block; }
         .lately ul { list-style: none; padding: 0; margin: 0; }
-        .lately li { font-size: 12px; color: #444; padding: 6px 0; border-bottom: 1px dashed #e8e8e8; }
+        .lately li { font-size: 12px; color: var(--about); padding: 6px 0; border-bottom: 1px dashed var(--dash); }
         .lately li:last-child { border-bottom: none; }
-        .lately li::before { content: '—'; margin-right: 10px; color: #bbb; }
+        .lately li::before { content: '—'; margin-right: 10px; color: var(--bullet); }
 
-        .footnote { margin-top: 56px; padding-top: 20px; border-top: 1px solid #e8e8e8; font-size: 11px; color: #888; line-height: 1.7; }
-        .footnote sup { font-size: 9px; margin-right: 6px; color: #aaa; }
+        .footnote { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--hair); font-size: 11px; color: var(--muted2); line-height: 1.7; }
+        .footnote sup { font-size: 9px; margin-right: 6px; color: var(--hair2); }
 
         /* section */
         section { margin-bottom: 48px; }
 
         .label {
-            font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888;
+            font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2);
             margin-bottom: 28px;
         }
 
         /* paper card */
         .paper {
-            border-top: 1px solid #e8e8e8;
+            border-top: 1px solid var(--hair);
             padding: 22px 0;
         }
-        .paper:last-child { border-bottom: 1px solid #e8e8e8; }
-        .paper-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
-        .paper-title { color: #111; font-weight: 400; margin-bottom: 14px; }
+        .paper:last-child { border-bottom: 1px solid var(--hair); }
+        .paper-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted2); margin-bottom: 8px; }
+        .paper-title { color: var(--ink); font-weight: 400; margin-bottom: 14px; }
         .paper-img { display: block; max-width: 100%; margin: 0 auto 14px}
         .paper-sections { list-style: none; padding: 0; margin: 0; }
-        .paper-sections li { padding: 4px 0; border-bottom: 1px dashed #e8e8e8; font-size: 12px; }
+        .paper-sections li { padding: 4px 0; border-bottom: 1px dashed var(--dash); font-size: 12px; }
         .paper-sections li:last-child { border-bottom: none; }
-        .paper-sections a { color: #555; transition: color 0.15s; }
-        .paper-sections a:hover { color: #111; }
-        .paper-sections .sec-num { color: #bbb; margin-right: 8px; font-size: 10px; }
+        .paper-sections a { color: var(--muted); transition: color 0.15s; }
+        .paper-sections a:hover { color: var(--ink); }
+        .paper-sections .sec-num { color: var(--bullet); margin-right: 8px; font-size: 10px; }
+
+        /* status tags */
+        .tag { display: inline-block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 7px; margin-left: 8px; border: 1px solid var(--hair2); color: var(--muted2); vertical-align: middle; }
+        .tag.done { border-color: var(--green); color: var(--green); }
+        .tag.wip  { border-color: var(--peach); color: var(--peach); }
 
         .dot {
             display: inline-block;
@@ -94,10 +138,25 @@
         @media (max-width: 600px) {
             body { padding: 64px 24px 80px; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; }
+        }
+
+        @media print {
+            :root { --bg: #fff; --ink: #000; --muted: #333; --muted2: #444; }
+            body { padding: 0; display: block; }
+            .topbar, .theme-toggle { display: none !important; }
+            .paper-img { max-width: 320px; }
+        }
     </style>
 </head>
 <body>
 <div class="wrap">
+
+    <div class="topbar">
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode">◐ theme</button>
+    </div>
 
     <p class="name">✦ Yashvi Sharma <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExODE3c3dnY3g4enNyMmt4OXUzNXBzYTgyMjIwdGVjY3FuamFrYmd5OSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/ozCcNgznOnE56vUmJc/giphy.gif" style = "width: 5vh";</p>
     <p class="bio">Final-year CS undergrad. SDE intern at Nielsen Media. Reading papers, working through the math, building toward research.</p>
@@ -129,16 +188,16 @@
 
         <div class="paper">
             <p class="paper-type">Vaswani et al. 2017</p>
-            <p class="paper-title"><span class="dot dot-blue"></span>Attention Is All You Need</p>
+            <p class="paper-title"><span class="dot dot-blue"></span>Attention Is All You Need<span class="tag done">complete</span></p>
             <img class="paper-img" src="https://ml-digest.com/wp-content/uploads/2024/12/transformer-architecture.png" alt="Attention Is All You Need">
             <ul class="paper-sections">
-                <li><span class="sec-num">§ 3.1</span><a href="blogs/study1.html">Transformer Architecture: Encoder</a></li>
-                <li><span class="sec-num">§ 3.1</span><a href="blogs/study2.html">Transformer Architecture: Decoder</a></li>
-                <li><span class="sec-num">§ 3.2</span><a href="blogs/study3.html">Attention: Scaled Dot-Product & Multi-Head</a></li>
-                <li><span class="sec-num">§ 3.3</span><a href="blogs/study4.html">Position-wise Feed-Forward Networks</a></li>
-                <li><span class="sec-num">§ 3.4</span><a href="blogs/study5.html">Embeddings and Softmax</a></li>
-                <li><span class="sec-num">§ 3.5</span><a href="blogs/study6.html">Positional Encoding</a></li>
-                <li><span class="sec-num">code</span><a href="blogs/study7.html">Build: The Transformer From Scratch (trained, 99.8%)</a> · <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer" style="border-bottom:1px solid #aaa;">source ↗</a></li>
+                <li><span class="sec-num">§ 3.1</span><a href="blogs/attention-is-all-you-need/01-encoder.html">Transformer Architecture: Encoder</a></li>
+                <li><span class="sec-num">§ 3.1</span><a href="blogs/attention-is-all-you-need/02-decoder.html">Transformer Architecture: Decoder</a></li>
+                <li><span class="sec-num">§ 3.2</span><a href="blogs/attention-is-all-you-need/03-attention.html">Attention: Scaled Dot-Product & Multi-Head</a></li>
+                <li><span class="sec-num">§ 3.3</span><a href="blogs/attention-is-all-you-need/04-feed-forward.html">Position-wise Feed-Forward Networks</a></li>
+                <li><span class="sec-num">§ 3.4</span><a href="blogs/attention-is-all-you-need/05-embeddings-softmax.html">Embeddings and Softmax</a></li>
+                <li><span class="sec-num">§ 3.5</span><a href="blogs/attention-is-all-you-need/06-positional-encoding.html">Positional Encoding</a></li>
+                <li><span class="sec-num">code</span><a href="blogs/attention-is-all-you-need/07-build-from-scratch.html">Build: The Transformer From Scratch (trained, 99.8%)</a> · <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer" style="border-bottom:1px solid #aaa;">source ↗</a></li>
             </ul>
         </div>
     </section>
@@ -148,12 +207,20 @@
 
         <div class="paper">
             <p class="paper-type">Agentic AI</p>
-            <p class="paper-title"><span class="dot dot-peach"></span>Research Agent</p>
+            <p class="paper-title"><span class="dot dot-peach"></span>Research Agent<span class="tag wip">notes</span></p>
             <img class="paper-img" alt="image" src="https://github.com/user-attachments/assets/1c261f2e-bde3-4190-bc87-6bbfbfb6f8b4" />
             <ul class="paper-sections">
-                <li><span class="sec-num">01</span><a href="blogs/note1.html">Why Hybrid RAG Architecture was needed</a></li>
-                <li><span class="sec-num">02</span><a href="blogs/note2.html">OpenIE Noise & Hallucination Filtering</a></li>
-                <li><span class="sec-num">03</span><a href="blogs/note3.html">Knowledge Graphs 101</a></li>
+                <li><span class="sec-num">01</span><a href="blogs/research-agent/01-hybrid-rag.html">Why Hybrid RAG Architecture was needed</a></li>
+                <li><span class="sec-num">02</span><a href="blogs/research-agent/02-openie-filtering.html">OpenIE Noise & Hallucination Filtering</a></li>
+                <li><span class="sec-num">03</span><a href="blogs/research-agent/03-knowledge-graphs.html">Knowledge Graphs 101</a></li>
+            </ul>
+        </div>
+
+        <div class="paper">
+            <p class="paper-type">Model Compression</p>
+            <p class="paper-title"><span class="dot dot-purple"></span>Shrinking DistilBERT<span class="tag done">complete</span></p>
+            <ul class="paper-sections">
+                <li><span class="sec-num">code</span><a href="blogs/distilbert/index.html">Compressing DistilBERT — experiment writeup</a> · <a href="https://github.com/yashvisharma1204/neural.y/blob/main/work/Compressing_DistilBERT.ipynb" style="border-bottom:1px solid var(--hair2);">notebook ↗</a></li>
             </ul>
         </div>
     </section>
@@ -161,5 +228,6 @@
     <p class="footnote" id="note" style="color:#7f7dfc"><sup>[1]</sup> Not just a line on a resume. I want to understand how research actually gets done — the iteration, the dead ends, the slow progress. I want to contribute something real, even if small, and grow into someone who can do it independently one day.</p>
 
 </div>
+<script defer src="blogs/blog.js"></script>
 </body>
 </html>
