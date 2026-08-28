@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention — Attention Is All You Need, §3.2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
+        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
+        .math-block .katex-display { margin: 0; }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
+        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 10px; color: #888; }
+        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
+        .stack { margin: 14px 0; }
+        .stack-row { display: flex; align-items: stretch; border: 1px solid #111; margin-bottom: -1px; font-size: 11px; }
+        .stack-label { width: 60px; min-width: 60px; background: #111; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; text-align: center; }
+        .stack-content { padding: 8px 12px; flex: 1; }
+        .stack-math { padding: 8px 10px; font-size: 10px; color: #888; text-align: right; min-width: 130px; border-left: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: flex-end; }
+        .stack-row.in { background: #bae6fd; } .stack-row.out { background: #bbf7d0; }
+        .stack-row.l { background: white; } .stack-row.l:nth-child(even) { background: #fafafa; }
+        .stack-arrow { text-align: center; font-size: 11px; color: #888; padding: 2px 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
+        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
+        .card-body { padding: 12px; line-height: 1.7; }
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
+        .graph { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; padding: 20px; border: 1px dashed #ccc; background: #fafafa; }
+        .g-node { width: 64px; height: 64px; border: 1px solid #111; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
+        .g-node .g-sub { font-size: 10px; color: #888; } .g-conn { font-size: 11px; color: #888; }
+        .heads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0; }
+        .head-box { border: 1px solid #111; padding: 8px 6px; text-align: center; font-size: 10px; line-height: 1.5; }
+        .head-box strong { display: block; font-size: 11px; margin-bottom: 2px; }
+        .head-box:nth-child(1){background:#bae6fd;} .head-box:nth-child(2){background:#fecdd3;}
+        .head-box:nth-child(3){background:#fef08a;} .head-box:nth-child(4){background:#bbf7d0;}
+        .head-box:nth-child(5){background:#ddd6fe;} .head-box:nth-child(6){background:#fed7aa;}
+        .head-box:nth-child(7){background:#c7d2fe;} .head-box:nth-child(8){background:#fbcfe8;}
+        .attn-grid { display: inline-grid; grid-template-columns: repeat(4, 40px); gap: 3px; margin: 14px auto; }
+        .attn-cell { width: 40px; height: 40px; border: 1px solid #111; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .attn-wrap { display: flex; justify-content: center; margin: 14px 0; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
+        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
+        .next p { color: #888; font-size: 12px; margin: 0; }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
+        .next-btn:hover { background: white; border-color: white; }
+        .cf::after { content: ''; display: table; clear: both; }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .stack-math { display: none; } .next { flex-direction: column; }
+            .heads-grid { grid-template-columns: repeat(2, 1fr); }
+            .attn-grid { grid-template-columns: repeat(4, 32px); } .attn-cell { width: 32px; height: 32px; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Vaswani et al. 2017 — §3.2 Attention</span>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Research Notes — Transformer Architecture</span>
+        <h1>Attention</h1>
+        <p class="cover-sub">The core primitive both stacks are built on — from a single scaled dot-product to eight parallel heads, and the three ways the Transformer wires it up</p>
+        <div class="cover-meta">
+            <span><strong>Paper</strong>Attention Is All You Need</span>
+            <span><strong>Section</strong>§3.2 (3.2.1 – 3.2.3)</span>
+            <span><strong>Config</strong>h=8, d_model=512, d_k=d_v=64</span>
+            <span><strong>Core function</strong>$\text{Attention} : \mathbb{R}^{m\times d_k}\!\times\!\mathbb{R}^{n\times d_k}\!\times\!\mathbb{R}^{n\times d_v} \to \mathbb{R}^{m\times d_v}$</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">8</span><span class="stat-l">Heads h</span></div>
+        <div class="stat"><span class="stat-n">64</span><span class="stat-l">d_k = d_v</span></div>
+        <div class="stat"><span class="stat-n">√64</span><span class="stat-l">Scale factor</span></div>
+        <div class="stat"><span class="stat-n">3</span><span class="stat-l">Attn uses</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">step 01</p>
+        <p class="entry-title">What Attention Actually Computes</p>
+
+        <p>§3.2: <em>"An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."</em></p>
+
+        <p>Strip away the matrices and it is one idea: <strong>for each query, look up how relevant every key is, turn those relevances into a probability distribution, then average the values under that distribution.</strong> Everything else in this section is how that lookup is made fast, stable, and expressive.</p>
+
+        <div class="pipeline">
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Query</strong>what I'm looking for<div class="shape">$q \in \mathbb{R}^{d_k}$</div></div>
+            <div class="pipe-arrow">·</div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Keys</strong>what each token offers<div class="shape">$K \in \mathbb{R}^{n\times d_k}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>Softmax</strong>relevance weights<div class="shape">$a \in \Delta^{n}$</div></div>
+            <div class="pipe-arrow">·</div>
+            <div class="pipe-node" style="background:#bbf7d0;"><strong>Values</strong>weighted average<div class="shape">$o \in \mathbb{R}^{d_v}$</div></div>
+        </div>
+
+        <div class="note blue">
+            <span class="note-label">Q, K, V — one intuition</span>
+            The <strong>query</strong> is the current token asking a question. Each <strong>key</strong> is a token advertising what it contains. The dot product $q\cdot k$ measures how well the question matches that advertisement. The <strong>value</strong> is the actual content retrieved once you know how much to trust each match.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 02 · §3.2.1</p>
+        <p class="entry-title">Scaled Dot-Product Attention</p>
+
+        <p>§3.2.1: <em>"We compute the dot products of the query with all keys, divide each by $\sqrt{d_k}$, and apply a softmax function to obtain the weights on the values."</em> Packed into matrices for a whole batch of queries at once:</p>
+
+        <div class="math-block">
+            $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V$$
+        </div>
+
+        <div class="stack">
+            <div class="stack-row in"><div class="stack-label">IN</div><div class="stack-content">Q, K, V — projected queries, keys, values</div><div class="stack-math">$Q\!\in\!\mathbb{R}^{m\times d_k},\ K\!\in\!\mathbb{R}^{n\times d_k}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">1</div><div class="stack-content">score every query against every key</div><div class="stack-math">$S = QK^\top \in \mathbb{R}^{m\times n}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">2</div><div class="stack-content">scale down to keep softmax in a sane range</div><div class="stack-math">$S' = S / \sqrt{d_k}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">3</div><div class="stack-content">(optional) add mask — $-\infty$ on illegal keys</div><div class="stack-math">$S'' = S' + M$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">4</div><div class="stack-content">softmax over keys → each row sums to 1</div><div class="stack-math">$A = \text{softmax}(S'') \in \mathbb{R}^{m\times n}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row out"><div class="stack-label">OUT</div><div class="stack-content">weighted sum of values</div><div class="stack-math">$O = AV \in \mathbb{R}^{m\times d_v}$</div></div>
+        </div>
+
+        <h3>Why divide by √d_k</h3>
+        <p>§3.2.1: <em>"We suspect that for large values of $d_k$, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients."</em> The reasoning is statistical. If the components of $q$ and $k$ are independent with mean 0 and variance 1, then their dot product has mean 0 but variance $d_k$:</p>
+
+        <div class="math-block">
+            $$q\cdot k = \sum_{i=1}^{d_k} q_i k_i, \qquad \mathbb{E}[q\cdot k] = 0, \qquad \text{Var}(q\cdot k) = d_k$$
+        </div>
+
+        <p>So the raw scores have standard deviation $\sqrt{d_k}$. With $d_k = 64$ that is a spread of $\pm 8$ — large enough that softmax saturates, one weight goes to ~1 and the rest to ~0, and gradients through the other terms vanish. Dividing by $\sqrt{d_k}$ renormalises the variance back to 1, keeping the distribution soft and the gradients healthy.</p>
+
+        <div class="note yellow">
+            <span class="note-label">Dot-product vs. additive attention</span>
+            §3.2.1 notes additive attention (a small feed-forward net, à la Bahdanau) and dot-product attention have similar theoretical cost, <em>"but dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code."</em> The scaling is the one fix that lets the fast version match the additive version's stability at large $d_k$.
+        </div>
+
+        <h3>Worked Example — one query, three keys</h3>
+        <p>Say a query scores $[6.0, 2.0, 4.0]$ against three keys, with $d_k = 4$ so $\sqrt{d_k} = 2$:</p>
+        <div class="math-block">
+            $$\tfrac{S}{\sqrt{d_k}} = [3.0,\, 1.0,\, 2.0] \ \xrightarrow{\text{softmax}}\ [0.665,\, 0.090,\, 0.245]$$
+            $$o = 0.665\,v_1 + 0.090\,v_2 + 0.245\,v_3$$
+        </div>
+        <p>Without the scale the raw scores $[6,2,4]$ soften to $[0.867, 0.016, 0.117]$ — far peakier. The $\sqrt{d_k}$ divide is what keeps positions 2 and 3 from being effectively ignored.</p>
+
+        <div class="attn-wrap">
+            <div class="attn-grid">
+                <div class="attn-cell" style="background:#bbf7d0;">.67</div><div class="attn-cell" style="background:#f0f0f0;">.09</div><div class="attn-cell" style="background:#d9f99d;">.24</div><div class="attn-cell" style="background:#fafafa;color:#bbb;">0</div>
+                <div class="attn-cell" style="background:#f0f0f0;">.10</div><div class="attn-cell" style="background:#bbf7d0;">.70</div><div class="attn-cell" style="background:#f0f0f0;">.15</div><div class="attn-cell" style="background:#f0f0f0;">.05</div>
+                <div class="attn-cell" style="background:#d9f99d;">.20</div><div class="attn-cell" style="background:#f0f0f0;">.12</div><div class="attn-cell" style="background:#bbf7d0;">.55</div><div class="attn-cell" style="background:#f0f0f0;">.13</div>
+                <div class="attn-cell" style="background:#f0f0f0;">.08</div><div class="attn-cell" style="background:#f0f0f0;">.11</div><div class="attn-cell" style="background:#d9f99d;">.26</div><div class="attn-cell" style="background:#bbf7d0;">.55</div>
+            </div>
+        </div>
+        <p style="text-align:center;color:#888;font-size:10px;margin-top:-4px;">an example attention matrix $A$ — rows = queries, columns = keys, each row sums to 1</p>
+    </section>
+
+    <section>
+        <p class="entry-type">step 03 · §3.2.2</p>
+        <p class="entry-title">Multi-Head Attention — Doing It Eight Ways</p>
+
+        <p>§3.2.2: <em>"Instead of performing a single attention function with $d_{\text{model}}$-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values $h$ times with different, learned linear projections... On each of these projected versions we then perform the attention function in parallel."</em></p>
+
+        <p>A single attention head can only express one notion of relevance at a time — its softmax has to commit to one weighting. Multiple heads let the model attend to different things simultaneously: one head might track syntactic dependencies, another positional adjacency, another coreference.</p>
+
+        <div class="math-block">
+            $$\text{head}_i = \text{Attention}(QW_i^Q,\, KW_i^K,\, VW_i^V)$$
+            $$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\,W^O$$
+        </div>
+
+        <p>Each head gets its own learned projections down to $d_k = d_v = d_{\text{model}}/h = 64$ dimensions, runs scaled dot-product attention in that subspace, and the eight 64-dim outputs are concatenated back to 512 and mixed by $W^O$:</p>
+
+        <div class="math-block">
+            $$W_i^Q, W_i^K \in \mathbb{R}^{512\times 64}, \quad W_i^V \in \mathbb{R}^{512\times 64}, \quad W^O \in \mathbb{R}^{512\times 512}$$
+        </div>
+
+        <div class="heads-grid">
+            <div class="head-box"><strong>h1</strong>local adjacency</div>
+            <div class="head-box"><strong>h2</strong>subject–verb</div>
+            <div class="head-box"><strong>h3</strong>coreference</div>
+            <div class="head-box"><strong>h4</strong>rare tokens</div>
+            <div class="head-box"><strong>h5</strong>positional</div>
+            <div class="head-box"><strong>h6</strong>phrase span</div>
+            <div class="head-box"><strong>h7</strong>punctuation</div>
+            <div class="head-box"><strong>h8</strong>long-range</div>
+        </div>
+        <p style="text-align:center;color:#888;font-size:10px;margin-top:-4px;"><strong>Labels are illustrative only</strong> — the paper assigns heads no fixed jobs. These names are a mnemonic; real heads learn overlapping, often uninterpretable mixes, and some are redundant enough to prune after training.</p>
+
+        <div class="note green">
+            <span class="note-label">The cost stays flat — §3.2.2</span>
+            <em>"Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality."</em> Because $h \cdot d_k = 8 \cdot 64 = 512 = d_{\text{model}}$, eight heads at width 64 cost about the same as one head at width 512 — you get diversity for free, not by spending more compute.
+        </div>
+
+        <div class="note pink">
+            <span class="note-label">The catch — quadratic in sequence length</span>
+            "Free" refers to head <em>width</em>, not sequence length. The score matrix $QK^\top$ is $n \times n$ per head, so both compute and <strong>memory scale as $O(n^2 \cdot d)$</strong> — double the sequence and you quadruple the attention cost. This is the single biggest scaling bottleneck of the vanilla Transformer and the motivation behind later work (sparse, linear, and flash attention). §4 gives the exact per-layer complexity table.
+        </div>
+
+        <div class="pipeline">
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Input</strong>Q, K, V<div class="shape">$\mathbb{R}^{\ast\times 512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Project ×8</strong>$W_i^{Q,K,V}$<div class="shape">$\mathbb{R}^{\ast\times 64}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>Attend ×8</strong>parallel heads<div class="shape">$\mathbb{R}^{m\times 64}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#ddd6fe;"><strong>Concat</strong>8 × 64<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#bbf7d0;"><strong>Mix $W^O$</strong>final blend<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 04 · §3.2.3</p>
+        <p class="entry-title">Three Ways the Transformer Uses Attention</p>
+
+        <p>§3.2.3: <em>"The Transformer uses multi-head attention in three different ways."</em> The mechanism is identical every time — only where $Q$, $K$, and $V$ come from changes, and whether a mask is applied.</p>
+
+        <div class="three-col">
+            <div class="card">
+                <div class="card-head">1 — Encoder Self-Attention</div>
+                <div class="card-body">
+                    <p>$Q, K, V$ all come from the previous encoder layer. Every source position attends to every source position — no mask.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$\text{MHA}(X, X, X)$</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">2 — Masked Decoder Self-Attn</div>
+                <div class="card-body">
+                    <p>$Q, K, V$ from the decoder itself, but a causal mask blocks $j > i$ to preserve the auto-regressive property.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$\text{MHA}(Y, Y, Y) + \text{mask}$</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">3 — Encoder-Decoder Cross-Attn</div>
+                <div class="card-body">
+                    <p>$Q$ from the decoder, $K, V$ from the encoder output. Every target position attends over all source positions.</p>
+                    <div class="math-block" style="background:transparent;border:none;padding:4px 0;">$\text{MHA}(Y, Z, Z)$</div>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead><tr><th>Use</th><th>Query from</th><th>Key / Value from</th><th>Mask?</th><th>Weight shape</th></tr></thead>
+            <tbody>
+                <tr><td>Encoder self-attn</td><td>encoder layer</td><td>encoder layer</td><td>no</td><td>$n \times n$</td></tr>
+                <tr><td>Decoder self-attn</td><td>decoder layer</td><td>decoder layer</td><td>causal</td><td>$m \times m$</td></tr>
+                <tr class="hl"><td>Cross-attn</td><td>decoder layer</td><td>encoder output</td><td>no</td><td>$m \times n$</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note pink">
+            <span class="note-label">Same block, different wiring</span>
+            This is the elegance of the architecture: one <code>MultiHeadAttention</code> module, reused three times. Encoder and decoder look different only because of what you feed the same primitive and whether you hand it a mask.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 05</p>
+        <p class="entry-title">PyTorch Implementation</p>
+
+        <p>The whole of §3.2 fits in one module. Note the reshape trick: instead of eight separate matmuls, project once to 512, split into $(h, d_k)$, and let batched matrix multiply handle all heads at once.</p>
+
+        <pre><code><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">def</span> <span class="fn">scaled_dot_product_attention</span>(Q, K, V, mask=None):
+    d_k = Q.size(-1)
+    scores = Q @ K.transpose(-2, -1) / d_k ** 0.5      <span class="c"># [B, h, m, n]</span>
+    <span class="kw">if</span> mask <span class="kw">is</span> <span class="kw">not</span> None:
+        scores = scores.masked_fill(mask == 0, float(<span class="fn">'-inf'</span>))
+    attn = F.softmax(scores, dim=-1)                    <span class="c"># rows sum to 1</span>
+    <span class="kw">return</span> attn @ V, attn                              <span class="c"># [B, h, m, d_v]</span>
+
+<span class="kw">class</span> <span class="fn">MultiHeadAttention</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d_model=512, num_heads=8):
+        super().__init__()
+        <span class="kw">assert</span> d_model % num_heads == 0
+        self.h, self.d_k = num_heads, d_model // num_heads   <span class="c"># 8, 64</span>
+        self.W_q = nn.Linear(d_model, d_model)               <span class="c"># all heads at once</span>
+        self.W_k = nn.Linear(d_model, d_model)
+        self.W_v = nn.Linear(d_model, d_model)
+        self.W_o = nn.Linear(d_model, d_model)               <span class="c"># output mix</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, q, k, v, mask=None):
+        B = q.size(0)
+        <span class="c"># project, then split 512 → (h=8, d_k=64) and swap to [B, h, len, d_k]</span>
+        q = self.W_q(q).view(B, -1, self.h, self.d_k).transpose(1, 2)
+        k = self.W_k(k).view(B, -1, self.h, self.d_k).transpose(1, 2)
+        v = self.W_v(v).view(B, -1, self.h, self.d_k).transpose(1, 2)
+
+        out, attn = scaled_dot_product_attention(q, k, v, mask)
+
+        <span class="c"># concat heads back to 512, then final linear W^O</span>
+        out = out.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)
+        <span class="kw">return</span> self.W_o(out)                             <span class="c"># [B, m, 512]</span></code></pre>
+
+        <div class="note blue">
+            <span class="note-label">Where the three uses call this</span>
+            Encoder self-attn: <code>mha(x, x, x)</code>. Masked decoder self-attn: <code>mha(y, y, y, causal_mask)</code>. Cross-attn: <code>mha(y, enc_out, enc_out)</code>. One class, three call sites — exactly what §3.2.3 describes.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 06</p>
+        <p class="entry-title">Shape Flow — End to End</p>
+
+        <table>
+            <thead><tr><th>Stage</th><th>Operation</th><th>Shape</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>Input Q / K / V</td><td>from prev. layer</td><td>[B &times; * &times; 512]</td><td>* = m (queries) or n (keys)</td></tr>
+                <tr><td>After projection</td><td>$W^{Q,K,V}$</td><td>[B &times; * &times; 512]</td><td>one linear, all heads</td></tr>
+                <tr><td>Split into heads</td><td>view + transpose</td><td>[B &times; 8 &times; * &times; 64]</td><td>$d_k = 512/8$</td></tr>
+                <tr><td>Scores $QK^\top$</td><td>batched matmul</td><td>[B &times; 8 &times; m &times; n]</td><td>per-head compatibility</td></tr>
+                <tr><td>Scale + mask + softmax</td><td>$/\sqrt{64}$, then softmax</td><td>[B &times; 8 &times; m &times; n]</td><td>rows sum to 1</td></tr>
+                <tr><td>Weighted values $AV$</td><td>batched matmul</td><td>[B &times; 8 &times; m &times; 64]</td><td>per-head output</td></tr>
+                <tr><td>Concat heads</td><td>transpose + view</td><td>[B &times; m &times; 512]</td><td>$8 \times 64 = 512$</td></tr>
+                <tr class="hl"><td>Output projection</td><td>$W^O$</td><td>[B &times; m &times; 512]</td><td>shape-invariant, feeds residual</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note gray">
+            <span class="note-label">Attention in one expression</span>
+            $$\text{MultiHead}(Q,K,V) = \Big[\,\text{softmax}\!\big(\tfrac{QW_i^Q (KW_i^K)^\top}{\sqrt{d_k}}\big)VW_i^V\,\Big]_{i=1}^{h}\,W^O$$
+            Every attention block in both the encoder and decoder is exactly this, differing only in the source of $Q,K,V$ and the presence of a mask.
+        </div>
+
+        <div class="note blue">
+            <span class="note-label">Attention at inference — the KV-cache</span>
+            During autoregressive generation the decoder produces one token at a time, and its masked self-attention re-attends over the entire prefix at every step. Recomputing all past keys and values each step would cost $O(n^2)$ work to emit $n$ tokens. Because past positions are fixed once generated, implementations <strong>cache</strong> their $K$ and $V$ projections and only compute $K,V$ for the newest token — so each step is $O(n)$ and the whole sequence is $O(n^2)$ instead of $O(n^3)$. The paper doesn't describe this (it's an inference-time engineering detail), but it's why Transformer generation is practical. Note: cross-attention's $K,V$ come from the fixed encoder output, so they're computed once and cached for the entire decode.
+        </div>
+
+        <div class="note yellow">
+            <span class="note-label">Why this replaces recurrence</span>
+            A single attention layer connects any two positions in $O(1)$ sequential steps — no unrolling through time. That constant path length, plus the fully parallel matmul form, is what lets the Transformer drop recurrence entirely. §4 quantifies exactly this trade-off.
+        </div>
+    </section>
+
+    <div class="next">
+        <div>
+            <span class="next-label">Next Section</span>
+            <h2>Position-wise Feed-Forward Networks</h2>
+            <p>§3.3 — the other sub-layer in every block: a two-layer MLP applied to each position independently, where most of the model's parameters live.</p>
+        </div>
+        <a href="study4.html" class="next-btn">Next &rarr; §3.3</a>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position-wise Feed-Forward Networks — Attention Is All You Need, §3.3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
+        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
+        .math-block .katex-display { margin: 0; }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
+        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 10px; color: #888; }
+        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
+        .stack { margin: 14px 0; }
+        .stack-row { display: flex; align-items: stretch; border: 1px solid #111; margin-bottom: -1px; font-size: 11px; }
+        .stack-label { width: 60px; min-width: 60px; background: #111; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; text-align: center; }
+        .stack-content { padding: 8px 12px; flex: 1; }
+        .stack-math { padding: 8px 10px; font-size: 10px; color: #888; text-align: right; min-width: 130px; border-left: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: flex-end; }
+        .stack-row.in { background: #bae6fd; } .stack-row.out { background: #bbf7d0; }
+        .stack-row.l { background: white; } .stack-row.l:nth-child(even) { background: #fafafa; }
+        .stack-arrow { text-align: center; font-size: 11px; color: #888; padding: 2px 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
+        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
+        .card-body { padding: 12px; line-height: 1.7; }
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
+        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
+        .next p { color: #888; font-size: 12px; margin: 0; }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
+        .next-btn:hover { background: white; border-color: white; }
+        .cf::after { content: ''; display: table; clear: both; }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .stack-math { display: none; } .next { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Vaswani et al. 2017 — §3.3 Feed-Forward</span>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Research Notes — Transformer Architecture</span>
+        <h1>Position-wise Feed-Forward Networks</h1>
+        <p class="cover-sub">The other half of every layer — a tiny two-layer MLP applied to each position independently, where most of the model's parameters actually live</p>
+        <div class="cover-meta">
+            <span><strong>Paper</strong>Attention Is All You Need</span>
+            <span><strong>Section</strong>§3.3</span>
+            <span><strong>Shape</strong>512 → 2048 → 512</span>
+            <span><strong>Core function</strong>$\text{FFN} : \mathbb{R}^{d_{\text{model}}} \to \mathbb{R}^{d_{\text{model}}}$</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">512</span><span class="stat-l">d_model</span></div>
+        <div class="stat"><span class="stat-n">2048</span><span class="stat-l">d_ff</span></div>
+        <div class="stat"><span class="stat-n">4×</span><span class="stat-l">Expansion</span></div>
+        <div class="stat"><span class="stat-n">~2M</span><span class="stat-l">Params / layer</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">step 01</p>
+        <p class="entry-title">One MLP, Applied at Every Position</p>
+
+        <p>§3.3: <em>"In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between."</em></p>
+
+        <div class="math-block">
+            $$\text{FFN}(x) = \max(0,\, xW_1 + b_1)\,W_2 + b_2$$
+        </div>
+
+        <p>The key word is <strong>position-wise</strong>. Attention is where positions talk to each other; the FFN is where each position, on its own, is transformed by the same little network. No token looks at any other token inside the FFN — it is a pure per-vector map, run in parallel across all $m$ positions.</p>
+
+        <div class="pipeline">
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Input</strong>one token vector<div class="shape">$x \in \mathbb{R}^{512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Expand $W_1$</strong>project up<div class="shape">$\mathbb{R}^{2048}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>ReLU</strong>$\max(0,\cdot)$<div class="shape">$\mathbb{R}^{2048}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#bbf7d0;"><strong>Contract $W_2$</strong>project down<div class="shape">$\mathbb{R}^{512}$</div></div>
+        </div>
+
+        <div class="note blue">
+            <span class="note-label">Dimensions — §3.3</span>
+            <em>"The dimensionality of input and output is $d_{\text{model}} = 512$, and the inner-layer has dimensionality $d_{ff} = 2048$."</em> So $W_1 \in \mathbb{R}^{512\times 2048}$ and $W_2 \in \mathbb{R}^{2048\times 512}$ — a 4× expand, then a 4× contract back to the residual width.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 02</p>
+        <p class="entry-title">Why Expand Then Contract</p>
+
+        <p>The 4× inner width is not decoration. The ReLU only does something useful if it has room to carve the space into many linear regions — a wider hidden layer means more ReLU "hinges", so the network can approximate richer per-position functions before squeezing back down.</p>
+
+        <div class="stack">
+            <div class="stack-row in"><div class="stack-label">IN</div><div class="stack-content">$x$ — output of the attention sub-layer</div><div class="stack-math">$x \in \mathbb{R}^{m\times 512}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">1</div><div class="stack-content">linear up-projection into a wide space</div><div class="stack-math">$h = xW_1 + b_1 \in \mathbb{R}^{m\times 2048}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">2</div><div class="stack-content">ReLU zeroes negatives — the only nonlinearity</div><div class="stack-math">$h' = \max(0, h)$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row out"><div class="stack-label">OUT</div><div class="stack-content">linear down-projection back to residual width</div><div class="stack-math">$y = h'W_2 + b_2 \in \mathbb{R}^{m\times 512}$</div></div>
+        </div>
+
+        <p>§3.3 gives an alternate reading: <em>"Another way of describing this is as two convolutions with kernel size 1."</em> A 1×1 convolution over the sequence is exactly a linear layer applied independently at each position — which is why "position-wise" and "1×1 conv" describe the same operation.</p>
+
+        <div class="note yellow">
+            <span class="note-label">Where the parameters hide</span>
+            $W_1$ and $W_2$ together hold $512 \times 2048 + 2048 \times 512 \approx 2.1$M weights <em>per layer</em>. Across 6 encoder + 6 decoder layers that is the single largest chunk of the model — the FFNs, not attention, hold most of the Transformer's capacity. §6.2's ablation table backs this up empirically: varying $d_{ff}$ measurably shifts BLEU, confirming the inner width is a real capacity knob, not an arbitrary choice.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 03</p>
+        <p class="entry-title">Same Form, Different Weights per Layer</p>
+
+        <p>§3.3: <em>"While the linear transformations are the same across different positions, they use different parameters from layer to layer."</em> Two facts packed into one sentence:</p>
+
+        <div class="two-col">
+            <div class="card">
+                <div class="card-head">Shared across positions</div>
+                <div class="card-body">Within a single layer, position 1 and position 40 pass through the <strong>exact same</strong> $W_1, W_2$. This is what makes it position-wise and lets it run as one batched matmul.</div>
+            </div>
+            <div class="card">
+                <div class="card-head">Distinct across layers</div>
+                <div class="card-body">Layer 1's FFN and layer 2's FFN have <strong>independent</strong> weights. Each of the 12 FFNs in the model is its own learned function.</div>
+            </div>
+        </div>
+
+        <h3>Placement in the Layer</h3>
+        <p>The FFN is always the last sub-layer, wrapped in the same residual + LayerNorm pattern as attention:</p>
+        <div class="math-block">
+            $$\text{output} = \text{LayerNorm}\big(x + \text{Dropout}(\text{FFN}(x))\big)$$
+        </div>
+
+        <h3>PyTorch Implementation</h3>
+        <pre><code><span class="kw">class</span> <span class="fn">PositionwiseFFN</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d_model=512, d_ff=2048, dropout=0.1):
+        super().__init__()
+        self.w1 = nn.Linear(d_model, d_ff)     <span class="c"># 512 → 2048</span>
+        self.w2 = nn.Linear(d_ff, d_model)     <span class="c"># 2048 → 512</span>
+        self.dropout = nn.Dropout(dropout)
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x):                      <span class="c"># x: [B, m, 512]</span>
+        <span class="c"># applied identically to every position</span>
+        <span class="kw">return</span> self.w2(self.dropout(F.relu(self.w1(x))))
+        <span class="c"># [B, m, 512] — shape preserved</span></code></pre>
+
+        <div class="note green">
+            <span class="note-label">The division of labour</span>
+            Attention <em>moves information between positions</em>; the FFN <em>processes the information gathered at each position</em>. A Transformer layer is exactly this two-step rhythm — mix, then think — repeated N times.
+        </div>
+    </section>
+
+    <div class="next">
+        <div>
+            <span class="next-label">Next Section</span>
+            <h2>Embeddings and Softmax</h2>
+            <p>§3.4 — the shared input/output embedding matrix, the $\sqrt{d_{\text{model}}}$ scaling, and weight tying with the pre-softmax projection.</p>
+        </div>
+        <a href="study5.html" class="next-btn">Next &rarr; §3.4</a>
+    </div>
+
+</div>
+</body>
+</html>

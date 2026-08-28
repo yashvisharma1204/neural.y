@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Positional Encoding — Attention Is All You Need, §3.5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
+        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
+        .math-block .katex-display { margin: 0; }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
+        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 10px; color: #888; }
+        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
+        .stack { margin: 14px 0; }
+        .stack-row { display: flex; align-items: stretch; border: 1px solid #111; margin-bottom: -1px; font-size: 11px; }
+        .stack-label { width: 60px; min-width: 60px; background: #111; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; text-align: center; }
+        .stack-content { padding: 8px 12px; flex: 1; }
+        .stack-math { padding: 8px 10px; font-size: 10px; color: #888; text-align: right; min-width: 130px; border-left: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: flex-end; }
+        .stack-row.in { background: #bae6fd; } .stack-row.out { background: #bbf7d0; }
+        .stack-row.l { background: white; } .stack-row.l:nth-child(even) { background: #fafafa; }
+        .stack-arrow { text-align: center; font-size: 11px; color: #888; padding: 2px 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
+        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
+        .card-body { padding: 12px; line-height: 1.7; }
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
+        .pe-grid { display: inline-grid; gap: 3px; margin: 14px auto; }
+        .pe-row { display: flex; gap: 3px; }
+        .pe-cell { width: 30px; height: 26px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #333; }
+        .pe-wrap { display: flex; flex-direction: column; align-items: center; margin: 14px 0; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
+        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
+        .next p { color: #888; font-size: 12px; margin: 0; }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
+        .next-btn:hover { background: white; border-color: white; }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .stack-math { display: none; } .next { flex-direction: column; }
+            .pe-cell { width: 24px; height: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <span>Vaswani et al. 2017 — §3.5 Positional Encoding</span>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Research Notes — Transformer Architecture</span>
+        <h1>Positional Encoding</h1>
+        <p class="cover-sub">Attention is permutation-invariant — it sees a bag of tokens, not a sequence. Fixed sinusoids are how order gets smuggled back in, without a single learned parameter</p>
+        <div class="cover-meta">
+            <span><strong>Paper</strong>Attention Is All You Need</span>
+            <span><strong>Section</strong>§3.5</span>
+            <span><strong>Base</strong>10000</span>
+            <span><strong>Added to</strong>input embeddings, both stacks</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">sin</span><span class="stat-l">Even dims</span></div>
+        <div class="stat"><span class="stat-n">cos</span><span class="stat-l">Odd dims</span></div>
+        <div class="stat"><span class="stat-n">10⁴</span><span class="stat-l">Wavelength base</span></div>
+        <div class="stat"><span class="stat-n">0</span><span class="stat-l">Learned params</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">step 01</p>
+        <p class="entry-title">The Problem — Attention Has No Sense of Order</p>
+
+        <p>§3.5: <em>"Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence."</em></p>
+
+        <p>Self-attention computes weighted sums over a <em>set</em> of vectors. Shuffle the input tokens and the output is shuffled the same way — the mechanism is permutation-equivariant. "the cat sat" and "sat cat the" would produce identical representations. Something must break that symmetry before the first layer.</p>
+
+        <div class="note pink">
+            <span class="note-label">Why not just recurrence?</span>
+            RNNs get order for free because they process tokens one after another. The Transformer threw out recurrence for parallelism — so it has to re-inject order explicitly. Positional encoding is the price paid for going fully parallel.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 02</p>
+        <p class="entry-title">The Sinusoidal Formula</p>
+
+        <p>§3.5 defines the encoding for position $pos$ and dimension $i$:</p>
+
+        <div class="math-block">
+            $$PE_{(pos,\, 2i)} = \sin\!\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right), \qquad PE_{(pos,\, 2i+1)} = \cos\!\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)$$
+        </div>
+
+        <p>Each dimension of the encoding is a sinusoid. Even dimensions use sine, odd use cosine, and the <strong>wavelength grows geometrically</strong> from $2\pi$ up to $10000\cdot 2\pi$ as you move along the 512 dimensions. Low dimensions oscillate fast (fine position detail); high dimensions oscillate slowly (coarse position).</p>
+
+        <div class="stack">
+            <div class="stack-row in"><div class="stack-label">pos</div><div class="stack-content">integer position in the sequence (0, 1, 2, …)</div><div class="stack-math">$pos \in \{0,\ldots,m-1\}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">dim 0-1</div><div class="stack-content">shortest wavelength — changes every step</div><div class="stack-math">$\lambda \approx 2\pi$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row l"><div class="stack-label">dim i</div><div class="stack-content">geometric interpolation of frequency</div><div class="stack-math">$\omega_i = 10000^{-2i/d}$</div></div>
+            <div class="stack-arrow">↓</div>
+            <div class="stack-row out"><div class="stack-label">dim 510-511</div><div class="stack-content">longest wavelength — barely changes</div><div class="stack-math">$\lambda \approx 10000\cdot 2\pi$</div></div>
+        </div>
+
+        <p>The result is that each position gets a <strong>unique 512-dim fingerprint</strong> — like a binary counter where each bit flips at a different rate, but continuous. No two positions in any reasonable sequence length share the same vector.</p>
+
+        <div class="pe-wrap">
+            <div class="pe-grid">
+                <div class="pe-row">
+                    <div class="pe-cell" style="background:#f0f9ff;">.00</div><div class="pe-cell" style="background:#22c55e;color:#fff;">1.0</div><div class="pe-cell" style="background:#f0f9ff;">.00</div><div class="pe-cell" style="background:#22c55e;color:#fff;">1.0</div><div class="pe-cell" style="background:#f0f9ff;">.00</div><div class="pe-cell" style="background:#22c55e;color:#fff;">1.0</div>
+                </div>
+                <div class="pe-row">
+                    <div class="pe-cell" style="background:#0ea5e9;color:#fff;">.84</div><div class="pe-cell" style="background:#86efac;">.54</div><div class="pe-cell" style="background:#38bdf8;color:#fff;">.82</div><div class="pe-cell" style="background:#86efac;">.57</div><div class="pe-cell" style="background:#38bdf8;color:#fff;">.80</div><div class="pe-cell" style="background:#86efac;">.60</div>
+                </div>
+                <div class="pe-row">
+                    <div class="pe-cell" style="background:#0ea5e9;color:#fff;">.91</div><div class="pe-cell" style="background:#bbf7d0;">-.42</div><div class="pe-cell" style="background:#0ea5e9;color:#fff;">.94</div><div class="pe-cell" style="background:#bbf7d0;">-.35</div><div class="pe-cell" style="background:#0ea5e9;color:#fff;">.96</div><div class="pe-cell" style="background:#dcfce7;">-.29</div>
+                </div>
+                <div class="pe-row">
+                    <div class="pe-cell" style="background:#f0f9ff;">.14</div><div class="pe-cell" style="background:#22c55e;color:#fff;">-.99</div><div class="pe-cell" style="background:#e0f2fe;">.25</div><div class="pe-cell" style="background:#22c55e;color:#fff;">-.97</div><div class="pe-cell" style="background:#bae6fd;">.34</div><div class="pe-cell" style="background:#22c55e;color:#fff;">-.94</div>
+                </div>
+            </div>
+            <p style="text-align:center;color:#888;font-size:10px;margin-top:8px;">exact values, $d_{\text{model}}=512$ · rows = positions 0–3 · columns = dims 0–5 (sin, cos alternating) · blue = sin dims, green = cos dims</p>
+        </div>
+
+        <p>These are the true numbers, not an approximation. Notice how dimension 0 races through $\sin$ — $0 \to .84 \to .91 \to .14$ across just four positions — while the sin values in dims 2 and 4 climb more gently ($.82, .80$ at position 1). That difference is the frequency ladder in action; the leftmost dimensions carry fine-grained position, the rightmost carry the coarse, slowly-drifting signal.</p>
+
+        <h3>The Wavelength Ladder</h3>
+        <p>The period of dimension pair $k$ is $\lambda_k = 2\pi \cdot 10000^{2k/d}$. It stretches geometrically from $2\pi \approx 6.28$ tokens at the fastest dimension to nearly $10000\cdot 2\pi$ at the slowest — over four orders of magnitude across the 512 dimensions:</p>
+
+        <div class="math-block">
+            $$\lambda_0 = 2\pi \approx 6.28 \quad\longrightarrow\quad \lambda_{255} = 2\pi\cdot 10000^{510/512} \approx 60{,}600$$
+        </div>
+
+        <div class="pe-wrap">
+            <div class="pe-grid" style="gap:0;">
+                <div class="pe-row" style="gap:0;">
+                    <div class="pe-cell" style="width:70px;background:#0ea5e9;color:#fff;border-right:none;">λ≈6</div>
+                    <div class="pe-cell" style="width:70px;background:#38bdf8;color:#fff;border-right:none;">≈63</div>
+                    <div class="pe-cell" style="width:70px;background:#7dd3fc;border-right:none;">≈628</div>
+                    <div class="pe-cell" style="width:70px;background:#bae6fd;border-right:none;">≈6.3k</div>
+                    <div class="pe-cell" style="width:70px;background:#e0f2fe;">≈60k</div>
+                </div>
+            </div>
+            <p style="text-align:center;color:#888;font-size:10px;margin-top:8px;">wavelength per dimension — dim 0 (left, fast) → dim 510 (right, slow) · a smooth continuous analogue of binary place-value</p>
+        </div>
+
+        <div class="note gray">
+            <span class="note-label">Binary-counter analogy, made precise</span>
+            In binary, bit 0 flips every 1 step, bit 1 every 2, bit 2 every 4 — geometric periods. Sinusoidal PE is the continuous version: dim 0 has period ~6.3, and each higher dimension multiplies the period by $10000^{2/d} \approx 1.037$. The whole 512-vector is a smooth, real-valued place-value code for position.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 03</p>
+        <p class="entry-title">Why Sinusoids — The Relative-Position Trick</p>
+
+        <p>§3.5: <em>"We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $k$, $PE_{pos+k}$ can be represented as a linear function of $PE_{pos}$."</em></p>
+
+        <p>This is the deep reason. Because of the angle-addition identities, shifting a position by a fixed offset $k$ is a <strong>linear (rotation) transform</strong> of the encoding — one that does not depend on $pos$ itself:</p>
+
+        <div class="math-block">
+            $$\begin{bmatrix} \sin(\omega(pos{+}k)) \\ \cos(\omega(pos{+}k)) \end{bmatrix} = \begin{bmatrix} \cos\omega k & \sin\omega k \\ -\sin\omega k & \cos\omega k \end{bmatrix} \begin{bmatrix} \sin(\omega\, pos) \\ \cos(\omega\, pos) \end{bmatrix}$$
+        </div>
+
+        <p>So the model can learn a single weight matrix that means "look 3 tokens back" and apply it identically everywhere in the sequence. Relative position becomes a linear operation the attention layers can exploit directly.</p>
+
+        <h3>Learned vs. Fixed</h3>
+        <p>§3.5: <em>"We also experimented with using learned positional embeddings instead, and found that the two versions produced nearly identical results."</em> They chose sinusoids anyway:</p>
+
+        <div class="two-col">
+            <div class="card">
+                <div class="card-head">Fixed sinusoidal ✓ chosen</div>
+                <div class="card-body">Zero parameters, and — §3.5 — <em>"may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."</em></div>
+            </div>
+            <div class="card">
+                <div class="card-head">Learned embeddings</div>
+                <div class="card-body">Nearly identical accuracy, but capped at the maximum length seen in training and costs extra parameters.</div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 04</p>
+        <p class="entry-title">Added, Not Concatenated</p>
+
+        <p>The encoding is <strong>added</strong> to the token embedding, keeping the width at $d_{\text{model}}$ (concatenation would double it). This is why §3.4's $\sqrt{d_{\text{model}}}$ scaling matters — it balances token identity against the positional signal before they are summed. §3.5 also notes dropout ($P_{drop}=0.1$) is applied to the sum before layer 1.</p>
+
+        <div class="math-block">
+            $$\text{input}_{pos} = E[t_{pos}]\cdot\sqrt{d_{\text{model}}} + PE_{pos}, \qquad X_0 = \text{Dropout}(\text{input})$$
+        </div>
+
+        <div class="pipeline">
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Token embed</strong>$E[t]\cdot\sqrt{d}$<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+            <div class="pipe-arrow">+</div>
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Pos. encoding</strong>$PE$<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>Dropout</strong>$p=0.1$<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+            <div class="pipe-arrow">──▶</div>
+            <div class="pipe-node" style="background:#bbf7d0;"><strong>Layer 1</strong>into the stack<div class="shape">$\mathbb{R}^{m\times 512}$</div></div>
+        </div>
+
+        <h3>PyTorch Implementation</h3>
+        <pre><code><span class="kw">class</span> <span class="fn">PositionalEncoding</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d_model=512, max_len=5000, dropout=0.1):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)
+        pe = torch.zeros(max_len, d_model)
+        pos = torch.arange(max_len).unsqueeze(1).float()            <span class="c"># [L, 1]</span>
+        <span class="c"># ω_i = 1 / 10000^(2i/d)  — computed in log space for stability</span>
+        div = torch.exp(torch.arange(0, d_model, 2).float()
+                        * -(math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(pos * div)   <span class="c"># even dims → sin</span>
+        pe[:, 1::2] = torch.cos(pos * div)   <span class="c"># odd dims  → cos</span>
+        self.register_buffer(<span class="fn">'pe'</span>, pe.unsqueeze(0))  <span class="c"># not a parameter</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x):                       <span class="c"># x: [B, m, 512]</span>
+        x = x + self.pe[:, :x.size(1)]           <span class="c"># add, sliced to seq len</span>
+        <span class="kw">return</span> self.dropout(x)</code></pre>
+
+        <div class="note green">
+            <span class="note-label">Once at the bottom, that's it</span>
+            Positional encoding is added a single time, before layer 1 of each stack. It is not re-injected at every layer — the residual connections carry the positional signal upward through all $N$ layers on their own.
+        </div>
+    </section>
+
+    <div class="next">
+        <div>
+            <span class="next-label">Section 3 Complete</span>
+            <h2>Why Self-Attention</h2>
+            <p>§4 — with the full architecture assembled, the paper justifies it: per-layer complexity, maximum path length, and parallelisability vs. recurrent and convolutional layers.</p>
+        </div>
+        <a href="#" class="next-btn">Next &rarr; §4</a>
+    </div>
+
+</div>
+</body>
+</html>

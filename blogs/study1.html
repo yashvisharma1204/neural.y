@@ -221,6 +221,11 @@
             Before each residual addition, $\text{Sublayer}(x)$ has dropout applied to its output: $\text{LayerNorm}(x + \text{Dropout}(\text{Sublayer}(x)))$, $P_{drop}=0.1$ for the base model.
         </div>
 
+        <div class="note yellow">
+            <span class="note-label">Post-norm — and why it matters if you implement it today</span>
+            The original paper places LayerNorm <em>after</em> the residual add: $\text{LayerNorm}(x + \text{Sublayer}(x))$. This is <strong>post-norm</strong>. It works here only because of the learning-rate warmup schedule (§5.3) — without warmup, post-norm Transformers are notoriously unstable to train, since early gradients through the un-normalised residual can blow up. Most modern implementations (GPT, ViT, etc.) instead use <strong>pre-norm</strong>, $x + \text{Sublayer}(\text{LayerNorm}(x))$, which trains stably without warmup. If you reimplement the paper faithfully, keep the warmup; if you drop warmup, switch to pre-norm.
+        </div>
+
         <div class="two-col">
             <div class="card">
                 <div class="card-head">Sub-layer 1 — Multi-Head Self-Attention</div>
