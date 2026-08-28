@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build: The Transformer From Scratch — Attention Is All You Need</title>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f9f9f9; color: #111; font-family: 'Geist Mono', monospace;
+            font-size: 13px; font-weight: 300; line-height: 1.8; min-height: 100vh;
+            display: flex; justify-content: center; padding: 60px 24px 80px;
+        }
+        .wrap { width: 100%; max-width: 660px; }
+        a { color: inherit; text-decoration: none; }
+        nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 56px;
+            font-size: 11px; color: #888; border-bottom: 1px solid #e8e8e8; padding-bottom: 16px;
+        }
+        nav a { border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+        nav a:hover { color: #111; }
+        .cover { margin-bottom: 56px; }
+        .cover-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; display: block; margin-bottom: 12px; }
+        h1 { font-size: 20px; font-weight: 400; line-height: 1.3; margin-bottom: 8px; }
+        .cover-sub { color: #888; font-size: 12px; margin-bottom: 28px; }
+        .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; font-size: 11px; color: #888; padding-top: 16px; border-top: 1px solid #e8e8e8; }
+        .cover-meta span strong { color: #111; display: block; font-weight: 400; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #111; margin-bottom: 56px; }
+        .stat { padding: 16px 12px; text-align: center; border-right: 1px solid #111; }
+        .stat:last-child { border-right: none; }
+        .stat-n { font-size: 24px; font-weight: 400; display: block; line-height: 1; margin-bottom: 4px; }
+        .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #888; display: block; }
+        .stat:nth-child(1) { background: #bae6fd; } .stat:nth-child(2) { background: #fecdd3; }
+        .stat:nth-child(3) { background: #fef08a; } .stat:nth-child(4) { background: #bbf7d0; }
+        section { margin-bottom: 48px; border-top: 1px solid #e8e8e8; padding-top: 28px; }
+        .entry-type { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; margin-bottom: 10px; }
+        .entry-title { font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+        p { margin-bottom: 14px; color: #333; font-size: 13px; }
+        p:last-child { margin-bottom: 0; }
+        h3 { font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.18em; color: #888; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+        em { font-style: italic; } strong { font-weight: 400; color: #111; }
+        code { font-family: 'Geist Mono', monospace; font-size: 0.9em; background: #f0f0f0; padding: 1px 5px; border: 1px solid #e8e8e8; }
+        .math-block { background: #f5f5f5; border-left: 2px solid #111; padding: 14px 18px; margin: 14px 0; overflow-x: auto; font-size: 12px; }
+        .math-block .katex-display { margin: 0; }
+        .note { border-left: 2px solid #e8e8e8; padding: 10px 16px; margin: 14px 0; font-size: 12px; color: #555; }
+        .note.yellow { border-color: #111; background: #fef9c3; } .note.blue { border-color: #111; background: #eff6ff; }
+        .note.green { border-color: #111; background: #f0fdf4; } .note.pink { border-color: #111; background: #fff1f2; }
+        .note.gray { border-color: #111; background: #f3f4f6; }
+        .note-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #888; display: block; margin-bottom: 6px; }
+        .pipeline { display: flex; align-items: center; overflow-x: auto; margin: 14px 0; gap: 0; padding-bottom: 2px; }
+        .pipe-node { border: 1px solid #111; padding: 8px 12px; font-size: 11px; text-align: center; white-space: nowrap; flex-shrink: 0; line-height: 1.6; }
+        .pipe-node strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 400; margin-bottom: 2px; }
+        .pipe-node .shape { font-size: 10px; color: #888; }
+        .pipe-arrow { font-size: 11px; padding: 0 6px; color: #888; flex-shrink: 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .card { border: 1px solid #111; overflow: hidden; font-size: 12px; }
+        .card-head { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; }
+        .card-body { padding: 12px; line-height: 1.7; }
+        .card:nth-child(1) .card-body { background: #eff6ff; } .card:nth-child(2) .card-body { background: #fff1f2; } .card:nth-child(3) .card-body { background: #fef9c3; }
+        pre { background: #f5f5f5; color: #111; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1.7; padding: 18px 20px; margin: 14px 0; overflow-x: auto; border: 1px solid #111; }
+        pre .c { color: #888; } pre .kw { color: #2563eb; } pre .fn { color: #16a34a; } pre .s { color: #dc2626; }
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; border: 1px solid #111; }
+        th { background: #111; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 10px; text-align: left; font-weight: 400; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; color: #333; }
+        td:last-child { border-right: none; } tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #fafafa; } tr.hl td { background: #bbf7d0; color: #111; }
+        .verify { border: 1px solid #111; margin: 14px 0; font-size: 11px; }
+        .verify-row { display: flex; align-items: center; padding: 6px 12px; border-bottom: 1px solid #e8e8e8; gap: 10px; }
+        .verify-row:last-child { border-bottom: none; }
+        .verify-row:nth-child(even) { background: #fafafa; }
+        .badge { background: #16a34a; color: white; font-size: 9px; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 2px; flex-shrink: 0; }
+        .out-table td { font-size: 11px; }
+        .out-ok { color: #16a34a; } .out-bad { color: #dc2626; }
+        .curve { width: 100%; border: 1px solid #111; margin: 14px 0; display: block; }
+        .next { border: 1px solid #111; padding: 28px; margin-top: 48px; background: #111; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .next-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #666; display: block; margin-bottom: 6px; }
+        .next h2 { font-size: 16px; font-weight: 400; color: white; margin-bottom: 4px; }
+        .next p { color: #888; font-size: 12px; margin: 0; }
+        .next-btn { background: #fef08a; color: #111; border: 1px solid #fef08a; padding: 9px 18px; font-family: 'Geist Mono', monospace; font-size: 11px; text-decoration: none; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase; }
+        .next-btn:hover { background: white; border-color: white; }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2,1fr); } .two-col, .three-col { grid-template-columns: 1fr; }
+            h1 { font-size: 17px; } .next { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <nav>
+        <a href="https://yashvisharma1204.github.io/neural.y/">← neural.y / index</a>
+        <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer">source on github ↗</a>
+    </nav>
+
+    <div class="cover">
+        <span class="cover-label">Research Notes — Putting §3 Into Code</span>
+        <h1>Build: The Transformer From Scratch</h1>
+        <p class="cover-sub">Every module from the §3.1–§3.5 notes, assembled into one runnable encoder-decoder Transformer, trained on a real date-translation task — with the forward pass re-derived in pure NumPy to prove the math</p>
+        <div class="cover-meta">
+            <span><strong>Task</strong>Free-form dates → ISO 8601</span>
+            <span><strong>Model</strong>d=64, h=4, d_ff=256, N=2</span>
+            <span><strong>Params</strong>237,888</span>
+            <span><strong>Stack</strong>PyTorch 2.13 + NumPy 2.5</span>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-n">99.8%</span><span class="stat-l">Exact match</span></div>
+        <div class="stat"><span class="stat-n">6k</span><span class="stat-l">Train steps</span></div>
+        <div class="stat"><span class="stat-n">9/9</span><span class="stat-l">Math checks</span></div>
+        <div class="stat"><span class="stat-n">1e-6</span><span class="stat-l">NumPy vs Torch Δ</span></div>
+    </div>
+
+    <section>
+        <p class="entry-type">step 01</p>
+        <p class="entry-title">The Task — Real Sequence-to-Sequence Translation</p>
+
+        <p>To exercise the <em>whole</em> architecture — encoder, masked decoder self-attention, and encoder-decoder cross-attention — we need a task where the target is a genuine reordering of the source, not a copy. <strong>Date normalization</strong> fits perfectly: map free-form human dates to ISO 8601. The model has to <em>reorder</em> day/month/year and rewrite month names as numbers.</p>
+
+        <table>
+            <thead><tr><th>Source (human)</th><th>Target (ISO)</th><th>What it tests</th></tr></thead>
+            <tbody>
+                <tr><td>24th Jan 2001</td><td>2001-01-24</td><td>month name → number, reorder</td></tr>
+                <tr><td>March 3, 1998</td><td>1998-03-03</td><td>zero-padding a single digit</td></tr>
+                <tr><td>05/08/2012</td><td>2012-08-05</td><td>pure positional reordering D/M/Y → Y-M-D</td></tr>
+            </tbody>
+        </table>
+
+        <p>Data is generated procedurally in five formats — no dataset download. Tokenization is character-level over a shared vocabulary of <strong>69 symbols</strong>, so the tied embedding matrix (§3.4) is meaningful: the same $E$ embeds both the English source and the digit target.</p>
+
+        <div class="pipeline">
+            <div class="pipe-node" style="background:#bae6fd;"><strong>Source chars</strong>"24th Jan 2001"<div class="shape">$\mathbb{Z}^{20}$</div></div>
+            <div class="pipe-arrow">─ enc ─▶</div>
+            <div class="pipe-node" style="background:#fecdd3;"><strong>Encoder</strong>N=2 layers<div class="shape">$\mathbb{R}^{20\times 64}$</div></div>
+            <div class="pipe-arrow">─ cross ─▶</div>
+            <div class="pipe-node" style="background:#fef08a;"><strong>Decoder</strong>masked + cross<div class="shape">$\mathbb{R}^{m\times 64}$</div></div>
+            <div class="pipe-arrow">─▶</div>
+            <div class="pipe-node" style="background:#bbf7d0;"><strong>ISO chars</strong>"2001-01-24"<div class="shape">greedy</div></div>
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 02</p>
+        <p class="entry-title">The Assembled Model — Every Block From the Notes</p>
+
+        <p>Nothing here calls <code>nn.Transformer</code> or <code>nn.MultiheadAttention</code>. Every layer is built from <code>nn.Linear</code> using the exact code from the earlier sections. This is the full model, condensed:</p>
+
+        <pre><code><span class="c"># §3.2 — the core primitive, verbatim from study3.html</span>
+<span class="kw">def</span> <span class="fn">scaled_dot_product_attention</span>(Q, K, V, mask=None):
+    d_k = Q.size(-1)
+    scores = Q @ K.transpose(-2, -1) / math.sqrt(d_k)
+    <span class="kw">if</span> mask <span class="kw">is</span> <span class="kw">not</span> None:
+        scores = scores.masked_fill(mask == 0, float(<span class="s">'-inf'</span>))
+    <span class="kw">return</span> F.softmax(scores, dim=-1) @ V
+
+<span class="kw">class</span> <span class="fn">EncoderLayer</span>(nn.Module):        <span class="c"># §3.1 — 2 sub-layers</span>
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, src_mask):
+        x = self.norm1(x + self.dropout(self.self_attn(x, x, x, src_mask)))
+        x = self.norm2(x + self.dropout(self.ffn(x)))     <span class="c"># §3.3 FFN</span>
+        <span class="kw">return</span> x
+
+<span class="kw">class</span> <span class="fn">DecoderLayer</span>(nn.Module):        <span class="c"># §3.1 — 3 sub-layers</span>
+    <span class="kw">def</span> <span class="fn">forward</span>(self, y, enc, tgt_mask, src_mask):
+        y = self.norm1(y + self.dropout(self.self_attn(y, y, y, tgt_mask)))   <span class="c"># masked</span>
+        y = self.norm2(y + self.dropout(self.cross_attn(y, enc, enc, src_mask)))  <span class="c"># cross</span>
+        y = self.norm3(y + self.dropout(self.ffn(y)))
+        <span class="kw">return</span> y
+
+<span class="kw">class</span> <span class="fn">Transformer</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">_embed</span>(self, ids):                   <span class="c"># §3.4 scale + §3.5 pos-enc</span>
+        <span class="kw">return</span> self.pos(self.embed(ids) * math.sqrt(self.d_model))
+    <span class="kw">def</span> <span class="fn">forward</span>(self, src, tgt, src_mask, tgt_mask):
+        enc = self.encode(src, src_mask)
+        dec = self.decode(tgt, enc, tgt_mask, src_mask)
+        <span class="kw">return</span> dec @ self.embed.weight.T          <span class="c"># §3.4 tied pre-softmax</span></code></pre>
+
+        <h3>Every Code Block Maps to a Section</h3>
+        <table>
+            <thead><tr><th>Module</th><th>Paper §</th><th>Blog page</th><th>Role in this model</th></tr></thead>
+            <tbody>
+                <tr><td>MultiHeadAttention</td><td>§3.2</td><td>study3.html</td><td>used 5× — enc self, dec self, cross</td></tr>
+                <tr><td>PositionwiseFFN</td><td>§3.3</td><td>study4.html</td><td>last sub-layer of every block</td></tr>
+                <tr><td>tied embedding + √d</td><td>§3.4</td><td>study5.html</td><td>input embed &amp; pre-softmax logits</td></tr>
+                <tr><td>PositionalEncoding</td><td>§3.5</td><td>study6.html</td><td>injects order, 0 learned params</td></tr>
+                <tr><td>EncoderLayer</td><td>§3.1</td><td>study1.html</td><td>2 sub-layers, post-norm</td></tr>
+                <tr><td>DecoderLayer</td><td>§3.1</td><td>study2.html</td><td>3 sub-layers, causal mask</td></tr>
+                <tr class="hl"><td>Adam + warmup</td><td>§5.3</td><td>this page</td><td>Noam schedule, 800-step warmup</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <p class="entry-type">step 03 · idea from §3</p>
+        <p class="entry-title">Proving the Math — NumPy Mirror &amp; Assertions</p>
+
+        <p>Before training, the forward pass is re-implemented in <strong>pure NumPy</strong> — no autograd, hand-rolled softmax, LayerNorm, and multi-head attention — then run with the <em>same weights</em> as the PyTorch model. If the notes are right, the two must agree. They do, to floating-point precision. Alongside, seven structural claims from the shape-flow tables and the causal-mask section are checked numerically:</p>
+
+        <div class="verify">
+            <div class="verify-row"><span class="badge">PASS</span> MHA output shape == input $[B, n, d]$</div>
+            <div class="verify-row"><span class="badge">PASS</span> FFN preserves shape (§3.3)</div>
+            <div class="verify-row"><span class="badge">PASS</span> PositionalEncoding preserves shape (§3.5)</div>
+            <div class="verify-row"><span class="badge">PASS</span> cross-attention weights are $m \times n$ (§3.2.3)</div>
+            <div class="verify-row"><span class="badge">PASS</span> model logits are $[B, m, |V|]$ (§3.4)</div>
+            <div class="verify-row"><span class="badge">PASS</span> causal mask: future weights == 0 (§3.2.3)</div>
+            <div class="verify-row"><span class="badge">PASS</span> causal mask: attention rows still sum to 1</div>
+            <div class="verify-row"><span class="badge">PASS</span> PE relative-shift is a position-independent rotation (§3.5)</div>
+            <div class="verify-row"><span class="badge">PASS</span> NumPy encoder == PyTorch encoder, max$|\Delta| = 9.5\times10^{-7}$</div>
+        </div>
+
+        <div class="note green">
+            <span class="note-label">Why this matters</span>
+            The $9.5\times10^{-7}$ agreement is the "from scratch" guarantee: the PyTorch layers are not black boxes doing something the notes glossed over. The pure-NumPy re-derivation — softmax, LayerNorm, the head reshape, the $QK^\top/\sqrt{d_k}$ scaling — reconstructs the identical numbers by hand.
+        </div>
+
+        <pre><code><span class="c"># the NumPy multi-head attention — no torch, no autograd</span>
+<span class="kw">def</span> <span class="fn">np_mha</span>(mod, q, k, v, mask=None):
+    Q, K, V = np_linear(q, Wq), np_linear(k, Wk), np_linear(v, Wv)
+    Q, K, V = split_heads(Q), split_heads(K), split_heads(V)
+    scores = Q @ K.transpose(0,1,3,2) / math.sqrt(d_k)
+    <span class="kw">if</span> mask <span class="kw">is</span> <span class="kw">not</span> None: scores = np.where(mask == 0, -1e9, scores)
+    out = np_softmax(scores, axis=-1) @ V
+    <span class="kw">return</span> np_linear(merge_heads(out), Wo)
+
+<span class="fn">assert</span> np.abs(numpy_encoder - torch_encoder).max() &lt; 1e-4   <span class="c"># -> 9.5e-7</span></code></pre>
+    </section>
+
+    <section>
+        <p class="entry-type">step 04 · §5.3</p>
+        <p class="entry-title">Training — Adam With the Noam Warmup Schedule</p>
+
+        <p>Trained for 6,000 steps with Adam ($\beta_1{=}0.9,\ \beta_2{=}0.98,\ \epsilon{=}10^{-9}$) and label smoothing $\epsilon_{ls}{=}0.1$ (§5.4). The learning rate follows the paper's §5.3 schedule — linear warmup for 800 steps, then inverse-square-root decay:</p>
+
+        <div class="math-block">
+            $$lr = d_{\text{model}}^{-0.5} \cdot \min\!\left(step^{-0.5},\ step \cdot warmup^{-1.5}\right)$$
+        </div>
+
+        <img class="curve" src="assets/date_transformer_loss.png" alt="Training loss curve with warmup learning-rate schedule">
+        <p style="text-align:center;color:#888;font-size:10px;margin-top:-6px;">Real run. Blue = cross-entropy loss (47 → &lt;1). Orange dashed = the §5.3 warmup LR, peaking at ~4.4e-3 at step 800 then decaying.</p>
+
+        <div class="note yellow">
+            <span class="note-label">Warmup wasn't optional — a real result from this build</span>
+            The first training attempt used a flat learning rate and plateaued at <strong>46.6%</strong> accuracy, failing badly on the numeric <code>DD/MM/YYYY</code> format. Swapping in the §5.3 warmup schedule — with no other change — took the same model to <strong>99.8%</strong>. This is exactly the post-norm instability the §3.1 note warns about: post-norm Transformers need warmup to train well, and here that's not theory, it's the difference between the two runs.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 05</p>
+        <p class="entry-title">Results — Before &amp; After</p>
+
+        <p>Evaluated on <strong>500 freshly-generated dates the model never saw</strong>: <strong>99.8% exact-match</strong> (full string correct, including reordering and zero-padding). Greedy decoding, no beam search.</p>
+
+        <div class="two-col">
+            <div class="card">
+                <div class="card-head">Before training (step 0)</div>
+                <div class="card-body" style="font-family:'Geist Mono';">
+                    24th Jan 2001 → <span style="color:#dc2626;">q7-q--x9zz</span><br>
+                    05/08/2012 → <span style="color:#dc2626;">--z8f0oq--</span><br>
+                    <span style="color:#888;">random characters, loss ≈ 47</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head">After 6k steps</div>
+                <div class="card-body" style="font-family:'Geist Mono';">
+                    24th Jan 2001 → <span style="color:#16a34a;">2001-01-24</span><br>
+                    05/08/2012 → <span style="color:#16a34a;">2012-08-05</span><br>
+                    <span style="color:#888;">correct, incl. reordering</span>
+                </div>
+            </div>
+        </div>
+
+        <h3>Actual Predictions on Unseen Dates</h3>
+        <table class="out-table">
+            <thead><tr><th>Source</th><th>Prediction</th><th>Gold</th><th></th></tr></thead>
+            <tbody>
+                <tr><td>19 October 1960</td><td>1960-10-19</td><td>1960-10-19</td><td class="out-ok">✓</td></tr>
+                <tr><td>05/08/2012</td><td>2012-08-05</td><td>2012-08-05</td><td class="out-ok">✓</td></tr>
+                <tr><td>November 27, 1962</td><td>1962-11-27</td><td>1962-11-27</td><td class="out-ok">✓</td></tr>
+                <tr><td>9th Feb 2001</td><td>2001-02-09</td><td>2001-02-09</td><td class="out-ok">✓</td></tr>
+                <tr><td>28/03/1976</td><td>1976-03-28</td><td>1976-03-28</td><td class="out-ok">✓</td></tr>
+                <tr><td>30/12/2009</td><td>2009-12-30</td><td>2009-12-30</td><td class="out-ok">✓</td></tr>
+                <tr><td>Nov 21st, 1966</td><td>1966-11-21</td><td>1966-11-21</td><td class="out-ok">✓</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note blue">
+            <span class="note-label">What the numeric formats prove</span>
+            <code>05/08/2012 → 2012-08-05</code> is the money shot. There are no month <em>names</em> to lean on — the model must learn purely from position that the source's first field is the day and the last is the year, then emit them in reversed order. That reordering is cross-attention (§3.2.3) doing exactly what the encoder-decoder attention analogy in the paper describes.
+        </div>
+    </section>
+
+    <section>
+        <p class="entry-type">step 06</p>
+        <p class="entry-title">Reproduce It</p>
+
+        <p>The whole thing is two files — <code>transformer.py</code> (model + NumPy mirror + the 9 assertions) and <code>train.py</code> (task + training loop + plot). Total training time on CPU: about 3.5 minutes. <strong>Full source: <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer" style="border-bottom:1px solid #111;">github.com/yashvisharma1204/neural.y/work/transformer ↗</a></strong></p>
+
+        <pre><code><span class="kw">python</span> -m venv .venv &amp;&amp; source .venv/bin/activate
+<span class="kw">pip</span> install numpy torch matplotlib
+
+<span class="kw">python</span> transformer.py     <span class="c"># runs the 9 verification checks</span>
+<span class="kw">python</span> train.py           <span class="c"># trains, prints accuracy, saves loss_curve.png</span></code></pre>
+
+        <div class="note gray">
+            <span class="note-label">Honest caveats — is this really "generalization"?</span>
+            Two things to be straight about. <strong>(1) The date space is small.</strong> There are only ~27,800 valid dates (1950–2025), or ~139,000 counting the 5 surface formats. Training draws 384,000 examples (6k steps × batch 64), so the model sees each date ~14× on average — the 500-date test set is held out by seed, but it samples the <em>same small space</em> the model largely saturated. So 99.8% means "learned the mapping cleanly," not "extrapolated to unseen structure." <strong>(2) It's a tiny model</strong> ($d{=}64$, 2 layers, 238k params vs the paper's 65M). The goal is to show the <em>same architecture and equations</em> actually learn a reordering task — not to claim a benchmark. Accuracy is exact-string-match, greedy decode; the "before" outputs illustrate an untrained forward pass rather than logged verbatim.
+        </div>
+
+        <div class="note blue">
+            <span class="note-label">Why dates — and what else would work</span>
+            Dates are a strong <em>demonstration</em> choice because the target genuinely reorders the source (D/M/Y → Y-M-D), so cross-attention has to do real work — a copy task wouldn't exercise it. The tradeoff is the small, closed vocabulary above. To stress <em>generalization</em> harder you'd want a task whose space is effectively unbounded: arithmetic (<code>"327 + 45" → "372"</code>, carries force long-range attention), sequence reversal over random tokens, or a small synthetic grammar. A real MT dataset (Multi30k, IWSLT) is the most paper-authentic but needs a download, subword tokenization, and far more compute. Dates hit the sweet spot for a self-contained, CPU-trainable, few-minute demo that still lights up every sub-layer.
+        </div>
+    </section>
+
+    <div class="next">
+        <div>
+            <span class="next-label">Series</span>
+            <h2>§3 Complete — Notes to Working Code</h2>
+            <p>Encoder → Decoder → Attention → FFN → Embeddings → Positional Encoding → a Transformer that trains. Next up: §4 Why Self-Attention.</p>
+        </div>
+        <a href="https://yashvisharma1204.github.io/neural.y/" class="next-btn">← Index</a>
+    </div>
+
+</div>
+</body>
+</html>
