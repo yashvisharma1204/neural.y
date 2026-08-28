@@ -38,7 +38,7 @@ def ordinal(n):
     else: suf = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
     return f"{n}{suf}"
 
-def make_example():
+def make_example(return_fmt=False):
     y = random.randint(1950, 2025)
     mo = random.randint(1, 12)
     # pick a valid day
@@ -51,6 +51,8 @@ def make_example():
     elif fmt == 3: src = f"{MON_ABBR[mo-1]} {ordinal(d)}, {y}"
     else:          src = f"{d} {MONTHS[mo-1]} {y}"
     tgt = f"{y:04d}-{mo:02d}-{d:02d}"
+    if return_fmt:
+        return src, tgt, fmt
     return src, tgt
 
 # --------------------------------------------------------------------------
@@ -152,15 +154,27 @@ random.seed(999)
 N_EVAL = 500
 correct = 0
 samples = []
+fmt_correct = {}
+fmt_total = {}
 for i in range(N_EVAL):
-    s, t = make_example()
+    s, t, fmt = make_example(return_fmt=True)
     pred = translate(s)
     ok = (pred == t)
     correct += ok
+    fmt_total[fmt] = fmt_total.get(fmt, 0) + 1
+    fmt_correct[fmt] = fmt_correct.get(fmt, 0) + int(ok)
     if i < 12:
         samples.append((s, t, pred, ok))
 acc = correct / N_EVAL
 print(f"\nExact-match accuracy on {N_EVAL} unseen dates: {acc*100:.1f}%")
+FMT_NAMES = {0: "24th Jan 2001", 1: "March 3, 1998", 2: "05/08/2012 (D/M/Y)",
+             3: "Jan 3rd, 1998", 4: "3 March 1998"}
+print("\nPer-format accuracy:")
+per_format = []
+for f in sorted(fmt_total):
+    a = fmt_correct[f] / fmt_total[f]
+    per_format.append({"format": FMT_NAMES[f], "n": fmt_total[f], "acc": round(a, 4)})
+    print(f"  {FMT_NAMES[f]:22s} {a*100:5.1f}%  (n={fmt_total[f]})")
 print("\nSample translations (source -> prediction  [gold]):")
 for s, t, p, ok in samples:
     print(f"  {'OK ' if ok else 'XX '} {s:24s} -> {p:12s}  [{t}]")
@@ -200,9 +214,15 @@ results = {
     "final_loss": round(float(np.mean(losses[-50:])), 4),
     "accuracy": round(acc, 4),
     "warmup": WARMUP, "peak_lr": round(max(lrs), 5),
+    "per_format": per_format,
     "samples": [{"src": s, "gold": t, "pred": p, "ok": bool(ok)} for s, t, p, ok in samples],
     "loss_first": round(losses[0], 4),
 }
 with open("results.json", "w") as f:
     json.dump(results, f, indent=2)
 print("saved results.json")
+
+# save checkpoint + vocab so analyze.py can reload without retraining
+torch.save({"model": model.state_dict(), "stoi": stoi, "itos": itos,
+            "SRC_LEN": SRC_LEN, "TGT_LEN": TGT_LEN, "V": V}, "checkpoint.pt")
+print("saved checkpoint.pt")

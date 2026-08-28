@@ -6,6 +6,33 @@
   "accuracy": 0.998,
   "warmup": 800,
   "peak_lr": 0.00442,
+  "per_format": [
+    {
+      "format": "24th Jan 2001",
+      "n": 109,
+      "acc": 1.0
+    },
+    {
+      "format": "March 3, 1998",
+      "n": 100,
+      "acc": 0.99
+    },
+    {
+      "format": "05/08/2012 (D/M/Y)",
+      "n": 105,
+      "acc": 1.0
+    },
+    {
+      "format": "Jan 3rd, 1998",
+      "n": 95,
+      "acc": 1.0
+    },
+    {
+      "format": "3 March 1998",
+      "n": 91,
+      "acc": 1.0
+    }
+  ],
   "samples": [
     {
       "src": "19 October 1960",

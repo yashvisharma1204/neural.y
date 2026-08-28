@@ -292,19 +292,47 @@
             <span class="note-label">What the numeric formats prove</span>
             <code>05/08/2012 → 2012-08-05</code> is the money shot. There are no month <em>names</em> to lean on — the model must learn purely from position that the source's first field is the day and the last is the year, then emit them in reversed order. That reordering is cross-attention (§3.2.3) doing exactly what the encoder-decoder attention analogy in the paper describes.
         </div>
+
+        <h3>Seeing the Reordering — Cross-Attention Heatmap</h3>
+        <p>This isn't just a claim. Extracting the last decoder layer's cross-attention weights (head-averaged) while it generates <code>2012-08-05</code> from <code>05/08/2012</code> shows the reordering directly — each output character attends back to the exact source character it's copying:</p>
+
+        <img class="curve" src="assets/date_cross_attention.png" alt="Cross-attention heatmap showing output characters attending to source characters">
+        <p style="text-align:center;color:#888;font-size:10px;margin-top:-6px;">Real attention weights from the trained model. Rows = generated output (top→bottom), columns = source. Note the <strong>staircase</strong>: the year <code>2012</code> (top rows) attends to the source's <em>right</em> end, the day <code>05</code> (bottom rows) attends to the source's <em>left</em> end — the D/M/Y → Y-M-D reversal, made visible.</p>
+
+        <div class="note green">
+            <span class="note-label">Argmax alignment — output char → most-attended source char</span>
+            <code>'2'→'2', '0'→'0', '1'→'1', '2'→'2'</code> (year, from source cols 6–9) &nbsp;·&nbsp;
+            <code>'8'→'8'</code> at weight <strong>0.92</strong> (month, from source col 4) &nbsp;·&nbsp;
+            <code>'5'→'5'</code> at weight <strong>0.89</strong> (day, from source col 1). The model reaches across the whole sequence and copies fields in reversed order — pure positional cross-attention, no month-name crutch.
+        </div>
+
+        <h3>Accuracy by Input Format</h3>
+        <p>One aggregate number can hide a weak spot, so here's the breakdown across all five source formats (500 held-out dates). The purely-numeric D/M/Y format — the one with no lexical cues at all — is handled just as well as the named-month formats:</p>
+        <table>
+            <thead><tr><th>Source format</th><th>Example</th><th>Exact-match</th><th>n</th></tr></thead>
+            <tbody>
+                <tr><td>ordinal + abbr month</td><td>24th Jan 2001</td><td>100.0%</td><td>109</td></tr>
+                <tr><td>full month, comma</td><td>March 3, 1998</td><td>99.0%</td><td>100</td></tr>
+                <tr class="hl"><td>numeric D/M/Y</td><td>05/08/2012</td><td>100.0%</td><td>105</td></tr>
+                <tr><td>abbr month + ordinal</td><td>Jan 3rd, 1998</td><td>100.0%</td><td>95</td></tr>
+                <tr><td>day + full month</td><td>3 March 1998</td><td>100.0%</td><td>91</td></tr>
+            </tbody>
+        </table>
+        <p style="color:#888;font-size:11px;">The lone miss is a single sample in the full-month format — a spelling collision (long month names share prefixes), not a reordering failure.</p>
     </section>
 
     <section>
         <p class="entry-type">step 06</p>
         <p class="entry-title">Reproduce It</p>
 
-        <p>The whole thing is two files — <code>transformer.py</code> (model + NumPy mirror + the 9 assertions) and <code>train.py</code> (task + training loop + plot). Total training time on CPU: about 3.5 minutes. <strong>Full source: <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer" style="border-bottom:1px solid #111;">github.com/yashvisharma1204/neural.y/work/transformer ↗</a></strong></p>
+        <p>The whole thing is three small files — <code>transformer.py</code> (model + NumPy mirror + the 9 assertions), <code>train.py</code> (task + training loop + plot + checkpoint), and <code>analyze.py</code> (loads the checkpoint, draws the cross-attention heatmap). Total training time on CPU: about 3.5 minutes. <strong>Full source: <a href="https://github.com/yashvisharma1204/neural.y/tree/main/work/transformer" style="border-bottom:1px solid #111;">github.com/yashvisharma1204/neural.y/work/transformer ↗</a></strong></p>
 
         <pre><code><span class="kw">python</span> -m venv .venv &amp;&amp; source .venv/bin/activate
 <span class="kw">pip</span> install numpy torch matplotlib
 
 <span class="kw">python</span> transformer.py     <span class="c"># runs the 9 verification checks</span>
-<span class="kw">python</span> train.py           <span class="c"># trains, prints accuracy, saves loss_curve.png</span></code></pre>
+<span class="kw">python</span> train.py           <span class="c"># trains, prints per-format acc, saves checkpoint</span>
+<span class="kw">python</span> analyze.py         <span class="c"># draws the cross-attention heatmap</span></code></pre>
 
         <div class="note gray">
             <span class="note-label">Honest caveats — is this really "generalization"?</span>

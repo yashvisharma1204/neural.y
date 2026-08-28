@@ -48,6 +48,7 @@ class MultiHeadAttention(nn.Module):
         k = self.W_k(k).view(B, -1, self.h, self.d_k).transpose(1, 2)
         v = self.W_v(v).view(B, -1, self.h, self.d_k).transpose(1, 2)
         out, attn = scaled_dot_product_attention(q, k, v, mask)
+        self.last_attn = attn.detach()          # [B, h, m, n] — for inspection
         out = out.transpose(1, 2).contiguous().view(B, -1, self.h * self.d_k)
         return self.W_o(out)
 
