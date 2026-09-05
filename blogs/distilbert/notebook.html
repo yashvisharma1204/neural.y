@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compressing DistilBERT — neural.y</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f9; --ink: #111; --muted: #555; --muted2: #888;
+            --hair: #e8e8e8; --hair2: #aaa;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0f; --ink: #f4f4f5; --muted: #b6b6bd; --hair: #2a2a2e;
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--ink);
+            font-family: 'Geist Mono', monospace; font-size: 13px;
+            font-weight: 300; line-height: 1.8; padding: 60px 24px 80px;
+            display: flex; justify-content: center;
+        }
+        .wrap { width: 100%; max-width: 800px; } /* slightly wider for notebooks */
+        a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--hair2); }
+        .back { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2); display: inline-block; margin-bottom: 32px; border: none; }
+        .title { font-weight: 400; font-size: 16px; margin-bottom: 24px; }
+        
+        /* Notebook iframe container */
+        .notebook-container {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid var(--hair);
+            border-radius: 4px;
+            background: var(--bg);
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back" href="../../index.html">← back to neural.y</a>
+    
+    <p class="title">Compressing DistilBERT — Experiment Notebook</p>
+    
+    <div class="notebook-container">
+        <!-- Embeds the notebook directly from your public repo via nbviewer -->
+        <iframe src="https://nbviewer.org/github/yashvisharma1204/neural.y/blob/main/work/Compressing_DistilBERT.ipynb"></iframe>
+    </div>
+</div>
+</body>
+</html>
